@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-black;
+  }
+  
+  body {
+    @apply font-sans antialiased bg-gray-50 text-gray-900;
+  }
+  
+  ::selection {
+    @apply bg-red-200;
+  }
+}
+
+@layer utilities {
+  .shadow-brutal-active {
+    box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
+  }
+  
+  .shadow-brutal-none {
+    box-shadow: none;
+  }
+}
