@@ -19,7 +19,7 @@ export const ContactRow = ({ value, type }) => {
                 )}
             </div>
             <div className="inline-block bg-cyan-300 px-3 py-1 border-2 border-black shadow-brutal-sm rotate-1">
-                <span className="text-xs font-black font-mono text-gray-900 tracking-tight">
+                <span className="text-xs font-black font-mono text-gray-900 tracking-tight whitespace-nowrap">
                     {value}
                 </span>
             </div>

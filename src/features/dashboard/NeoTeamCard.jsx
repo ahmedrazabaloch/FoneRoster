@@ -99,10 +99,17 @@ export const NeoTeamCard = ({ team, driver, supervisor, helper, isNight }) => {
 
             {/* Footer Route */}
             <div className="p-3 border-t-4 border-black bg-gray-900 text-white mt-auto">
-                <p className="text-xs font-mono">
-                    <span className="text-red-500 font-bold uppercase mr-2">Route:</span>
-                    {team.route}
-                </p>
+                <div className="flex items-center flex-wrap gap-2">
+                    <span className="text-red-500 font-bold uppercase text-xs mr-1">Route:</span>
+                    {team.route.split(',').map((segment, idx) => (
+                        <span
+                            key={idx}
+                            className="inline-block bg-white text-gray-900 px-3 py-1 border-2 border-black shadow-brutal-sm text-xs font-black"
+                        >
+                            {segment.trim()}
+                        </span>
+                    ))}
+                </div>
             </div>
         </div>
     );

@@ -34,8 +34,8 @@ export const FieldSupervisorCard = ({ supervisors }) => (
                             <div className="bg-blue-100 border-2 border-black p-3 shadow-brutal-sm flex-shrink-0">
                                 <Phone size={20} className="text-blue-700" />
                             </div>
-                            <div className={`inline-block bg-yellow-300 px-4 py-1.5 border-2 border-black shadow-brutal-sm ${idx % 2 === 0 ? '-rotate-1' : 'rotate-1'}`}>
-                                <span className="font-mono font-black text-xl text-red-600 tracking-tighter">
+                            <div className={`inline-block bg-yellow-300 px-3 py-1.5 border-2 border-black shadow-brutal-sm ${idx % 2 === 0 ? '-rotate-1' : 'rotate-1'}`}>
+                                <span className="text-base md:text-lg font-black font-mono text-red-600 tracking-tight">
                                     {sup.phone}
                                 </span>
                             </div>

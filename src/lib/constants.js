@@ -18,9 +18,9 @@ export const INITIAL_TEAMS = [
 // Initial Employees Data
 export const INITIAL_EMPLOYEES = [
     // Hotline
-    { id: 101, name: 'Saeed Khan', fatherName: 'Ahmed Khan', role: 'Hotline', phone: '0311-1001001', whatsapp: '0311-1001001', cnic: '42101-1111111-1', license: 'N/A', photo: null, onLeave: false },
-    { id: 102, name: 'Sarah Khan', fatherName: 'Rashid Khan', role: 'Hotline', phone: '0312-2002002', whatsapp: '0312-2002002', cnic: '42101-2222222-2', license: 'N/A', photo: null, onLeave: false },
-    { id: 103, name: 'Mohsin Ali', fatherName: 'Ali Raza', role: 'Hotline', phone: '0315-3003003', whatsapp: '0315-3003003', cnic: '42101-3333333-3', license: 'N/A', photo: null, onLeave: false },
+    { id: 101, name: 'Absar ul Haque', fatherName: 'Azizul Haque', role: 'Coordinator', phone: '0332-3096586', whatsapp: '0332-3096586', cnic: '42101-1111111-1', license: 'N/A', photo: null, onLeave: false },
+    { id: 102, name: 'Zeeshan Azam', fatherName: 'Azam', role: 'Coordinator', phone: '0313-1203935', whatsapp: '0313-1203935', cnic: '42101-2222222-2', license: 'N/A', photo: null, onLeave: false },
+    { id: 103, name: 'Ahmed Raza', fatherName: 'M. Siddique', role: 'Coordinator', phone: '0313-9090700', whatsapp: '0313-9090700', cnic: '42101-3333333-3', license: 'N/A', photo: null, onLeave: false },
     // Drivers
     { id: 201, name: 'Imran', fatherName: 'Yousuf', role: 'Driver', phone: '0301-1111111', whatsapp: '0301-1111111', cnic: '42201-4444444-4', license: 'L-88291', photo: null, onLeave: false },
     { id: 202, name: 'Sawal', fatherName: 'Kareem', role: 'Driver', phone: '0301-2222222', whatsapp: '0301-2222222', cnic: '42201-5555555-5', license: 'L-11223', photo: null, onLeave: false },

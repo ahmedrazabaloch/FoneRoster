@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { Trash2, Plus } from 'lucide-react';
 import { RosterContext } from '../../context/RosterContext';
 import { Button, Select } from '../../components/ui';
+import { RouteDisplay } from '../../components/ui/RouteDisplay';
 import { toast } from 'sonner';
 
 export const FieldTeamConfig = () => {
