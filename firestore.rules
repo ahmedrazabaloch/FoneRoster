@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────
+    // EMPLOYEES collection
+    // Anyone can READ (dashboard is public)
+    // Only authenticated users can WRITE
+    // ─────────────────────────────────────
+    match /employees/{employeeId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // ─────────────────────────────────────
+    // TEAMS collection
+    // Anyone can READ (dashboard is public)
+    // Only authenticated users can WRITE
+    // ─────────────────────────────────────
+    match /teams/{teamId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // ─────────────────────────────────────
+    // ASSIGNMENTS collection (if used)
+    // Same rules as teams
+    // ─────────────────────────────────────
+    match /assignments/{assignmentId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // ─────────────────────────────────────
+    // HOTLINE CONFIG collection (if used)
+    // ─────────────────────────────────────
+    match /hotlineConfig/{configId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // ─────────────────────────────────────
+    // BLOCK ALL OTHER COLLECTIONS
+    // Deny access to anything not defined above
+    // ─────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

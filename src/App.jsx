@@ -28,7 +28,7 @@ function App() {
       <AuthProvider>
         <RosterProvider>
           <BrowserRouter>
-            <div className="min-h-screen bg-gray-50 font-sans text-gray-900 selection:bg-red-200">
+            <div className="min-h-screen font-sans text-gray-900 selection:bg-red-200 overflow-x-hidden">
               <Header />
               <Suspense
                 fallback={

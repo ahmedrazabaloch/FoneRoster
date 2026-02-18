@@ -6,12 +6,12 @@ import { Badge } from '../../components/ui';
 export const NeoTeamCard = ({ team, driver, supervisor, helper, isNight }) => {
     return (
         <div
-            className={`bg-white border-4 border-black shadow-brutal-lg p-0 flex flex-col h-full ${isNight ? 'shadow-indigo-900' : ''
+            className={`bg-white border-2 md:border-4 border-black shadow-brutal md:shadow-brutal-lg p-0 flex flex-col h-full ${isNight ? 'shadow-indigo-900' : ''
                 }`}
         >
             {/* Card Header */}
             <div
-                className={`p-4 border-b-4 border-black flex justify-between items-center ${isNight ? 'bg-indigo-50' : 'bg-orange-50'
+                className={`p-3 md:p-4 border-b-2 md:border-b-4 border-black flex justify-between items-center ${isNight ? 'bg-indigo-50' : 'bg-orange-50'
                     }`}
             >
                 <div className="flex flex-col">
@@ -27,7 +27,7 @@ export const NeoTeamCard = ({ team, driver, supervisor, helper, isNight }) => {
                         {team.name}
                     </h3>
                 </div>
-                <div className="bg-white border-2 border-black px-2 py-1 shadow-brutal flex-shrink-0 ml-2">
+                <div className="bg-white border-2 border-black px-2 py-1 shadow-brutal-sm md:shadow-brutal flex-shrink-0 ml-2">
                     <div className="flex items-center space-x-1">
                         <Truck size={14} />
                         <span className="font-black font-mono text-xs md:text-sm">
@@ -38,7 +38,7 @@ export const NeoTeamCard = ({ team, driver, supervisor, helper, isNight }) => {
             </div>
 
             {/* Personnel Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 divide-y-2 md:divide-y-0 md:divide-x-2 divide-black h-full">
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y-2 sm:divide-y-0 sm:divide-x-2 divide-black h-full">
                 {/* Driver Column */}
                 <div className="p-3 md:p-4 flex flex-col">
                     <div className="flex items-center space-x-2 mb-2 text-gray-400">
@@ -98,13 +98,14 @@ export const NeoTeamCard = ({ team, driver, supervisor, helper, isNight }) => {
             </div>
 
             {/* Footer Route */}
-            <div className="p-3 border-t-4 border-black bg-gray-900 text-white mt-auto">
-                <div className="flex items-center flex-wrap gap-2">
+            <div className="p-2 md:p-3 border-t-2 md:border-t-4 border-black bg-gray-900 text-white mt-auto">
+                <div className="flex items-center flex-wrap gap-1.5 md:gap-2">
                     <span className="text-red-500 font-bold uppercase text-xs mr-1">Route:</span>
                     {team.route.split(',').map((segment, idx) => (
                         <span
                             key={idx}
-                            className="inline-block bg-white text-gray-900 px-3 py-1 border-2 border-black shadow-brutal-sm text-xs font-black"
+                            className={`inline-block bg-white text-gray-900 px-2 md:px-3 py-0.5 md:py-1 border-2 border-red-500 text-[10px] md:text-xs font-black ${idx % 2 === 0 ? '-rotate-2' : 'rotate-2'}`}
+                            style={{ boxShadow: '2px 2px 0px #ef4444' }}
                         >
                             {segment.trim()}
                         </span>

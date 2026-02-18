@@ -9,7 +9,8 @@ export const RouteDisplay = ({ route }) => {
             {route.split(',').map((segment, idx) => (
                 <span
                     key={idx}
-                    className="inline-block bg-white text-gray-900 px-2 py-1 border-2 border-yellow-500 shadow-brutal-sm text-[10px] font-black"
+                    className={`inline-block bg-white text-gray-900 px-2 py-1 border-2 border-red-500 text-[10px] font-black ${idx % 2 === 0 ? '-rotate-2' : 'rotate-2'}`}
+                    style={{ boxShadow: '3px 3px 0px #ef4444' }}
                 >
                     {segment.trim()}
                 </span>

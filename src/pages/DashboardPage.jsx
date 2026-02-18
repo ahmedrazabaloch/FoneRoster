@@ -37,10 +37,10 @@ export const DashboardPage = () => {
     const isNightTime = currentHour >= 20 || currentHour < 8;
 
     return (
-        <div className="max-w-[1440px] mx-auto px-4 py-8">
-            <div className="flex flex-col lg:flex-row gap-8 relative items-start">
+        <div className="max-w-[1440px] mx-auto px-3 md:px-4 py-4 md:py-8">
+            <div className="flex flex-col lg:flex-row gap-4 md:gap-8 relative items-start">
                 {/* Left Column: Sticky Hotline Panel */}
-                <div className="w-full lg:w-1/3 xl:w-1/4 flex-shrink-0 lg:sticky lg:top-24 space-y-6 z-10">
+                <div className="w-full lg:w-1/3 xl:w-1/4 flex-shrink-0 lg:sticky lg:top-[72px] space-y-4 md:space-y-6 z-10">
                     <HotlinePanel
                         currentOperator={activeHotlineOp}
                         shiftName={currentShiftName}
@@ -51,8 +51,8 @@ export const DashboardPage = () => {
 
                 {/* Right Column: Scrollable Teams */}
                 <div className="w-full lg:w-2/3 xl:w-3/4">
-                    <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <h2 className="text-3xl md:text-5xl font-black uppercase text-gray-900 leading-none">
+                    <div className="mb-4 md:mb-6 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+                        <h2 className="text-2xl md:text-5xl font-black uppercase text-gray-900 leading-none">
                             {isEffectiveNight ? 'Night Zone' : 'Day Zone'}
                         </h2>
 
@@ -65,7 +65,7 @@ export const DashboardPage = () => {
                                 })
                             }
                             variant={isEffectiveNight ? 'secondary' : 'primary'}
-                            className="flex items-center space-x-2"
+                            className="flex items-center space-x-2 text-sm md:text-base min-h-[44px]"
                         >
                             {isEffectiveNight ? <Moon size={20} /> : <Sun size={20} />}
                             <span>
@@ -87,7 +87,7 @@ export const DashboardPage = () => {
                     </div>
 
                     {/* Grid Layout for Cards */}
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
                         {activeTeams.map(team => {
                             const teamAssign = assignments[team.id] || {};
                             return (

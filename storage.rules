@@ -1,0 +1,27 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ─────────────────────────────────────
+    // EMPLOYEE PHOTOS
+    // Anyone can VIEW photos (shown on dashboard)
+    // Only authenticated users can UPLOAD/DELETE
+    // Max file size: 5MB, images only
+    // ─────────────────────────────────────
+    match /employee-photos/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null;
+    }
+
+    // ─────────────────────────────────────
+    // BLOCK EVERYTHING ELSE
+    // ─────────────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
