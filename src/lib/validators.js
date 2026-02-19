@@ -4,14 +4,18 @@ import { z } from 'zod';
 export const employeeSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
     fatherName: z.string().min(2, 'Father name must be at least 2 characters'),
-    role: z.enum(['Driver', 'Supervisor', 'Helper', 'Hotline']),
-    phone: z.string().regex(/^03\d{2}-\d{7}$/, 'Phone must be in format 03XX-XXXXXXX'),
-    whatsapp: z.string().regex(/^03\d{2}-\d{7}$/, 'WhatsApp must be in format 03XX-XXXXXXX'),
-    cnic: z.string().regex(/^\d{5}-\d{7}-\d$/, 'CNIC must be in format XXXXX-XXXXXXX-X'),
-    license: z.string().optional(),
-    photo: z.any().optional(),
+    designation: z.enum(['driver', 'supervisor', 'helper', 'field_supervisor', 'executive_officer']),
+    roleType: z.enum(['field_team', 'field_supervisor', 'executive']),
+    phone: z.string().min(5, 'Phone number required'),
+    whatsapp: z.string().min(5, 'WhatsApp number required'),
+    cnic: z.string().min(5, 'CNIC required'),
+    licenseNo: z.string().nullable().optional(),
     onLeave: z.boolean().default(false),
     sameAsPhone: z.boolean().optional(),
+    availability: z.object({
+        day: z.boolean().default(true),
+        night: z.boolean().default(false),
+    }).optional(),
 });
 
 // Login form validation schema

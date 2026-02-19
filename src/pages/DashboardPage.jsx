@@ -13,7 +13,6 @@ export const DashboardPage = () => {
     const {
         employees,
         teams,
-        assignments,
         hotlineConfig,
         hotlineRoster,
         fieldSupervisorRoster,
@@ -89,7 +88,7 @@ export const DashboardPage = () => {
                     {/* Grid Layout for Cards */}
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
                         {activeTeams.map(team => {
-                            const teamAssign = assignments[team.id] || {};
+                            const teamAssign = team.assignments || {};
                             return (
                                 <NeoTeamCard
                                     key={team.id}

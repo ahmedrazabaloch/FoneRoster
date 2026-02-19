@@ -1,90 +1,101 @@
 import React, { useContext, useState, useMemo } from 'react';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import { RosterContext } from '../../context/RosterContext';
 import { Button } from '../../components/ui';
-import { RouteDisplay } from '../../components/ui/RouteDisplay';
 import { SaveBar } from '../../components/ui/SaveBar';
+import { FieldSupervisorControl } from './FieldSupervisorControl';
 import { useRosterDirtyState } from '../../hooks/useRosterDirtyState';
 import { toast } from 'sonner';
 
 export const FieldTeamConfig = () => {
     const {
         teams,
-        setTeams,
         employees,
-        assignments,
-        setAssignments,
         fieldSupervisorRoster,
-        setFieldSupervisorRoster,
+        addTeam: addTeamToFirestore,
+        updateTeam,
+        deleteTeam,
+        saveConfig,
     } = useContext(RosterContext);
 
     const [isSaving, setIsSaving] = useState(false);
 
-    const drivers = employees.filter(e => e.role === 'Driver');
-    const supervisors = employees.filter(e => e.role === 'Supervisor');
-    const helpers = employees.filter(e => e.role === 'Helper');
+    // Collapsible state (mobile only — desktop always shows content)
+    const [dayOpen, setDayOpen] = useState(false);
+    const [nightOpen, setNightOpen] = useState(false);
+
+    // Filter by designation for field team roles
+    const drivers = employees.filter(e => e.designation === 'driver');
+    const supervisors = employees.filter(e => e.designation === 'supervisor');
+    const helpers = employees.filter(e => e.designation === 'helper');
 
     // Dirty state tracking
     const rosterData = useMemo(() => ({
-        teams, assignments, fieldSupervisorRoster
-    }), [teams, assignments, fieldSupervisorRoster]);
+        teams: teams.map(t => ({ id: t.id, name: t.name, vehicle: t.vehicle, route: t.route, assignments: t.assignments })),
+        fieldSupervisorRoster,
+    }), [teams, fieldSupervisorRoster]);
 
     const { isDirty, markClean } = useRosterDirtyState(rosterData);
 
-    const handleAssignmentChange = (teamId, role, empId) => {
-        setAssignments(prev => ({
-            ...prev,
-            [teamId]: { ...prev[teamId], [role]: parseInt(empId, 10) },
-        }));
+    const handleAssignmentChange = async (teamId, role, empId) => {
+        const team = teams.find(t => t.id === teamId);
+        if (!team) return;
+        const updatedAssignments = { ...(team.assignments || {}), [role]: empId || '' };
+        try {
+            await updateTeam(teamId, { assignments: updatedAssignments });
+        } catch (error) {
+            toast.error('Failed to update assignment');
+        }
     };
 
-    const handleFieldSupervisorAssign = (shift, index, empId) => {
-        setFieldSupervisorRoster(prev => {
-            const updated = [...prev[shift]];
-            updated[index] = parseInt(empId, 10);
-            return { ...prev, [shift]: updated };
-        });
+    const updateTeamDetails = async (id, field, value) => {
+        try {
+            await updateTeam(id, { [field]: value });
+        } catch (error) {
+            toast.error('Failed to update team');
+        }
     };
 
-    const updateTeamDetails = (id, field, value) => {
-        setTeams(prev => prev.map(t => (t.id === id ? { ...t, [field]: value } : t)));
-    };
-
-    const addTeam = (shift) => {
+    const addTeam = async (shift) => {
         const isDay = shift === 'Day';
         const count = teams.filter(t => t.shift === shift).length;
         const isBackup = isDay ? count >= 7 : count >= 3;
 
         const newTeam = {
-            id: `${shift.toLowerCase()}-${Date.now()}`,
             name: `${isDay ? 'Day' : 'Night'} Team ${count + 1}${isBackup ? ' (Backup)' : ''}`,
             shift: shift,
             vehicle: '',
             route: 'General Route',
             isBackup: isBackup,
+            assignments: {},
         };
 
-        setTeams(prev => [newTeam, ...prev]);
-        toast.success('Team added successfully');
+        try {
+            await addTeamToFirestore(newTeam);
+            // Auto-open the section on mobile when adding
+            if (isDay) setDayOpen(true);
+            else setNightOpen(true);
+            toast.success('Team added successfully');
+        } catch (error) {
+            toast.error('Failed to add team');
+        }
     };
 
-    const removeTeam = (id) => {
+    const removeTeam = async (id) => {
         if (window.confirm('Delete this team and its assignments?')) {
-            setTeams(prev => prev.filter(t => t.id !== id));
-            setAssignments(prev => {
-                const next = { ...prev };
-                delete next[id];
-                return next;
-            });
-            toast.success('Team removed');
+            try {
+                await deleteTeam(id);
+                toast.success('Team removed');
+            } catch (error) {
+                toast.error('Failed to remove team');
+            }
         }
     };
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            // Simulate save (Firestore sync happens automatically via context)
-            await new Promise(resolve => setTimeout(resolve, 800));
+            await saveConfig({ fieldSupervisorRoster });
             markClean();
             toast.success('All changes saved successfully!');
         } catch (error) {
@@ -92,6 +103,16 @@ export const FieldTeamConfig = () => {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const toggleDay = () => {
+        setDayOpen(prev => !prev);
+        if (!dayOpen) setNightOpen(false);
+    };
+
+    const toggleNight = () => {
+        setNightOpen(prev => !prev);
+        if (!nightOpen) setDayOpen(false);
     };
 
     const renderTeamCard = (team) => (
@@ -123,7 +144,7 @@ export const FieldTeamConfig = () => {
                     </span>
                     <input
                         type="text"
-                        value={team.vehicle}
+                        value={team.vehicle || ''}
                         onChange={e => updateTeamDetails(team.id, 'vehicle', e.target.value)}
                         className="font-mono text-xs md:text-sm border-b-2 border-gray-300 focus:border-black outline-none flex-1 min-w-0 bg-transparent"
                         placeholder="Vehicle No"
@@ -135,7 +156,7 @@ export const FieldTeamConfig = () => {
                     </span>
                     <input
                         type="text"
-                        value={team.route}
+                        value={team.route || ''}
                         onChange={e => updateTeamDetails(team.id, 'route', e.target.value)}
                         className="text-xs border-b-2 border-gray-300 focus:border-black outline-none flex-1 min-w-0 bg-transparent"
                         placeholder="Assigned Route Area"
@@ -147,7 +168,7 @@ export const FieldTeamConfig = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <select
                     className="text-xs border-2 border-black p-2 md:p-1 font-bold w-full min-h-[44px] md:min-h-0 bg-white"
-                    value={assignments[team.id]?.Driver || ''}
+                    value={team.assignments?.Driver || ''}
                     onChange={e => handleAssignmentChange(team.id, 'Driver', e.target.value)}
                 >
                     <option value="">Driver...</option>
@@ -157,7 +178,7 @@ export const FieldTeamConfig = () => {
                 </select>
                 <select
                     className="text-xs border-2 border-black p-2 md:p-1 font-bold w-full min-h-[44px] md:min-h-0 bg-white"
-                    value={assignments[team.id]?.Supervisor || ''}
+                    value={team.assignments?.Supervisor || ''}
                     onChange={e => handleAssignmentChange(team.id, 'Supervisor', e.target.value)}
                 >
                     <option value="">Supervisor...</option>
@@ -167,7 +188,7 @@ export const FieldTeamConfig = () => {
                 </select>
                 <select
                     className="text-xs border-2 border-black p-2 md:p-1 font-bold w-full min-h-[44px] md:min-h-0 bg-white"
-                    value={assignments[team.id]?.Helper || ''}
+                    value={team.assignments?.Helper || ''}
                     onChange={e => handleAssignmentChange(team.id, 'Helper', e.target.value)}
                 >
                     <option value="">Helper...</option>
@@ -179,96 +200,86 @@ export const FieldTeamConfig = () => {
         </div>
     );
 
+    const dayTeams = teams.filter(t => t.shift === 'Day');
+    const nightTeams = teams.filter(t => t.shift === 'Night');
+
     return (
         <>
+            {/* Field Supervisor Control — extracted dedicated section */}
+            <FieldSupervisorControl />
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 pb-20">
                 {/* Day Shift */}
-                <div className="p-3 md:p-6 bg-white border-2 border-black shadow-brutal md:shadow-brutal-lg">
-                    <div className="flex justify-between items-center mb-4 md:mb-6">
-                        <h3 className="font-black text-base md:text-xl uppercase">Day Shift Configuration</h3>
-                        <Button onClick={() => addTeam('Day')} size="sm" variant="success" className="min-h-[44px] md:min-h-0">
+                <div className="p-0 md:p-6 bg-white border-2 border-black shadow-brutal md:shadow-brutal-lg">
+                    {/* Mobile: Collapsible header */}
+                    <button
+                        onClick={toggleDay}
+                        className="md:hidden w-full flex items-center justify-between p-3 min-h-[48px]"
+                    >
+                        <div className="flex items-center gap-2">
+                            {dayOpen ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                            <h3 className="font-black text-base uppercase">Day Shift Configuration</h3>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-gray-400">{dayTeams.length} teams</span>
+                            <Button onClick={(e) => { e.stopPropagation(); addTeam('Day'); }} size="sm" variant="success" className="min-h-[36px] px-2">
+                                <Plus size={16} />
+                            </Button>
+                        </div>
+                    </button>
+
+                    {/* Desktop: Always-visible header */}
+                    <div className="hidden md:flex justify-between items-center mb-6">
+                        <h3 className="font-black text-xl uppercase">Day Shift Configuration</h3>
+                        <Button onClick={() => addTeam('Day')} size="sm" variant="success">
                             <Plus size={16} />
-                            <span className="hidden sm:inline ml-1">Add Team</span>
+                            <span className="ml-1">Add Team</span>
                         </Button>
                     </div>
 
-                    {/* Field Supervisor Config (Day) */}
-                    <div className="mb-4 md:mb-6 bg-gray-50 p-3 md:p-4 border-2 border-black border-dashed">
-                        <label className="block text-xs font-bold uppercase mb-2">
-                            Shift Field Supervisors (Day)
-                        </label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <select
-                                className="border-2 border-black p-2 md:p-1 text-sm font-bold min-h-[44px] md:min-h-0 w-full bg-white"
-                                value={fieldSupervisorRoster.day[0] || ''}
-                                onChange={e => handleFieldSupervisorAssign('day', 0, e.target.value)}
-                            >
-                                <option value="">Select Supervisor 1</option>
-                                {supervisors.map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
-                            </select>
-                            <select
-                                className="border-2 border-black p-2 md:p-1 text-sm font-bold min-h-[44px] md:min-h-0 w-full bg-white"
-                                value={fieldSupervisorRoster.day[1] || ''}
-                                onChange={e => handleFieldSupervisorAssign('day', 1, e.target.value)}
-                            >
-                                <option value="">Select Supervisor 2</option>
-                                {supervisors.map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
-                            </select>
+                    {/* Content — collapsible on mobile, always visible on desktop */}
+                    <div className={`${dayOpen ? 'block' : 'hidden'} md:block p-3 md:p-0`}>
+                        <div className="space-y-6 md:space-y-8">
+                            {dayTeams.map(renderTeamCard)}
                         </div>
-                    </div>
-
-                    <div className="space-y-6 md:space-y-8">
-                        {teams.filter(t => t.shift === 'Day').map(renderTeamCard)}
                     </div>
                 </div>
 
                 {/* Night Shift */}
-                <div className="p-3 md:p-6 bg-white border-2 border-black shadow-brutal md:shadow-brutal-lg">
-                    <div className="flex justify-between items-center mb-4 md:mb-6">
-                        <h3 className="font-black text-base md:text-xl uppercase text-indigo-900">
+                <div className="p-0 md:p-6 bg-white border-2 border-black shadow-brutal md:shadow-brutal-lg">
+                    {/* Mobile: Collapsible header */}
+                    <button
+                        onClick={toggleNight}
+                        className="md:hidden w-full flex items-center justify-between p-3 min-h-[48px]"
+                    >
+                        <div className="flex items-center gap-2">
+                            {nightOpen ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                            <h3 className="font-black text-base uppercase text-indigo-900">Night Shift Configuration</h3>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-gray-400">{nightTeams.length} teams</span>
+                            <Button onClick={(e) => { e.stopPropagation(); addTeam('Night'); }} size="sm" className="bg-indigo-500 min-h-[36px] px-2">
+                                <Plus size={16} />
+                            </Button>
+                        </div>
+                    </button>
+
+                    {/* Desktop: Always-visible header */}
+                    <div className="hidden md:flex justify-between items-center mb-6">
+                        <h3 className="font-black text-xl uppercase text-indigo-900">
                             Night Shift Configuration
                         </h3>
-                        <Button onClick={() => addTeam('Night')} size="sm" className="bg-indigo-500 min-h-[44px] md:min-h-0">
+                        <Button onClick={() => addTeam('Night')} size="sm" className="bg-indigo-500">
                             <Plus size={16} />
-                            <span className="hidden sm:inline ml-1">Add Team</span>
+                            <span className="ml-1">Add Team</span>
                         </Button>
                     </div>
 
-                    {/* Field Supervisor Config (Night) */}
-                    <div className="mb-4 md:mb-6 bg-gray-50 p-3 md:p-4 border-2 border-black border-dashed">
-                        <label className="block text-xs font-bold uppercase mb-2">
-                            Shift Field Supervisors (Night)
-                        </label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <select
-                                className="border-2 border-black p-2 md:p-1 text-sm font-bold min-h-[44px] md:min-h-0 w-full bg-white"
-                                value={fieldSupervisorRoster.night[0] || ''}
-                                onChange={e => handleFieldSupervisorAssign('night', 0, e.target.value)}
-                            >
-                                <option value="">Select Supervisor 1</option>
-                                {supervisors.map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
-                            </select>
-                            <select
-                                className="border-2 border-black p-2 md:p-1 text-sm font-bold min-h-[44px] md:min-h-0 w-full bg-white"
-                                value={fieldSupervisorRoster.night[1] || ''}
-                                onChange={e => handleFieldSupervisorAssign('night', 1, e.target.value)}
-                            >
-                                <option value="">Select Supervisor 2</option>
-                                {supervisors.map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
-                            </select>
+                    {/* Content — collapsible on mobile, always visible on desktop */}
+                    <div className={`${nightOpen ? 'block' : 'hidden'} md:block p-3 md:p-0`}>
+                        <div className="space-y-6 md:space-y-8">
+                            {nightTeams.map(renderTeamCard)}
                         </div>
-                    </div>
-
-                    <div className="space-y-6 md:space-y-8">
-                        {teams.filter(t => t.shift === 'Night').map(renderTeamCard)}
                     </div>
                 </div>
             </div>

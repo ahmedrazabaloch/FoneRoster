@@ -13,7 +13,7 @@ export const EmployeeTable = ({ employees, onEdit, onDelete }) => {
             emp =>
                 emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 emp.id.toString().includes(searchTerm) ||
-                emp.role.toLowerCase().includes(searchTerm.toLowerCase())
+                (emp.designation || '').toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [employees, searchTerm]);
 
@@ -80,10 +80,10 @@ export const EmployeeTable = ({ employees, onEdit, onDelete }) => {
                                     <div className="text-[10px] text-gray-500 uppercase mb-1">
                                         S/O {emp.fatherName || '-'}
                                     </div>
-                                    <Badge variant="default">{emp.role}</Badge>
-                                    {emp.license && emp.license !== 'N/A' && (
+                                    <Badge variant="default">{(emp.designation || 'unknown').replace('_', ' ')}</Badge>
+                                    {emp.licenseNo && emp.licenseNo !== 'N/A' && (
                                         <div className="text-[10px] font-mono mt-1 text-gray-600">
-                                            Lic: {emp.license}
+                                            Lic: {emp.licenseNo}
                                         </div>
                                     )}
                                 </td>
@@ -158,8 +158,8 @@ export const EmployeeTable = ({ employees, onEdit, onDelete }) => {
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
                             className={`p-2 border-2 border-black ${currentPage === 1
-                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                    : 'bg-white hover:bg-gray-100 shadow-brutal-sm'
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-white hover:bg-gray-100 shadow-brutal-sm'
                                 }`}
                         >
                             <ChevronLeft size={16} />
@@ -168,8 +168,8 @@ export const EmployeeTable = ({ employees, onEdit, onDelete }) => {
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages}
                             className={`p-2 border-2 border-black ${currentPage === totalPages
-                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                    : 'bg-white hover:bg-gray-100 shadow-brutal-sm'
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-white hover:bg-gray-100 shadow-brutal-sm'
                                 }`}
                         >
                             <ChevronRight size={16} />

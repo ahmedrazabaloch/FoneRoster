@@ -1,7 +1,34 @@
 import React from 'react';
-import { User, Users, Truck } from 'lucide-react';
+import { User, Users, Truck, Phone, MessageCircle } from 'lucide-react';
 import { ContactRow } from './ContactRow';
 import { Badge } from '../../components/ui';
+import { formatWhatsAppUrl } from '../../lib/utils';
+
+const MobilePersonRow = ({ label, icon: Icon, person }) => (
+    <div className="flex items-center gap-2 py-2 border-b border-gray-200 last:border-b-0">
+        <div className="flex items-center gap-1 w-16 shrink-0 text-gray-400">
+            <Icon size={12} />
+            <span className="text-[9px] font-black uppercase tracking-wider">{label}</span>
+        </div>
+        <span className="font-bold text-sm text-gray-900 truncate flex-1 min-w-0">
+            {person?.name || 'Unassigned'}
+        </span>
+        {person && (
+            <div className="flex items-center gap-1.5 shrink-0">
+                {person.whatsapp && (
+                    <a href={formatWhatsAppUrl(person.whatsapp)} className="bg-green-100 border border-black p-1.5 shadow-brutal-sm">
+                        <MessageCircle size={12} className="text-green-700" />
+                    </a>
+                )}
+                {person.phone && (
+                    <a href={`tel:${person.phone}`} className="bg-blue-100 border border-black p-1.5 shadow-brutal-sm">
+                        <Phone size={12} className="text-blue-700" />
+                    </a>
+                )}
+            </div>
+        )}
+    </div>
+);
 
 export const NeoTeamCard = ({ team, driver, supervisor, helper, isNight }) => {
     return (
@@ -37,17 +64,24 @@ export const NeoTeamCard = ({ team, driver, supervisor, helper, isNight }) => {
                 </div>
             </div>
 
-            {/* Personnel Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y-2 sm:divide-y-0 sm:divide-x-2 divide-black h-full">
+            {/* Mobile: Compact horizontal rows */}
+            <div className="md:hidden p-2">
+                <MobilePersonRow label="Driver" icon={User} person={driver} />
+                <MobilePersonRow label="Super" icon={User} person={supervisor} />
+                <MobilePersonRow label="Helper" icon={Users} person={helper} />
+            </div>
+
+            {/* Desktop: 3-column grid (unchanged) */}
+            <div className="hidden md:grid md:grid-cols-3 md:divide-x-2 divide-black h-full">
                 {/* Driver Column */}
-                <div className="p-3 md:p-4 flex flex-col">
+                <div className="p-4 flex flex-col">
                     <div className="flex items-center space-x-2 mb-2 text-gray-400">
                         <User size={14} />
-                        <span className="text-[10px] md:text-xs font-black uppercase tracking-wider">
+                        <span className="text-xs font-black uppercase tracking-wider">
                             Driver
                         </span>
                     </div>
-                    <p className="font-bold text-sm md:text-base leading-tight mb-2 truncate">
+                    <p className="font-bold text-base leading-tight mb-2 truncate">
                         {driver?.name || 'Unassigned'}
                     </p>
                     {driver && (
@@ -59,14 +93,14 @@ export const NeoTeamCard = ({ team, driver, supervisor, helper, isNight }) => {
                 </div>
 
                 {/* Supervisor Column */}
-                <div className="p-3 md:p-4 bg-gray-50 flex flex-col">
+                <div className="p-4 bg-gray-50 flex flex-col">
                     <div className="flex items-center space-x-2 mb-2 text-gray-400">
                         <User size={14} />
-                        <span className="text-[10px] md:text-xs font-black uppercase tracking-wider">
+                        <span className="text-xs font-black uppercase tracking-wider">
                             Supervisor
                         </span>
                     </div>
-                    <p className="font-bold text-sm md:text-base leading-tight mb-2 truncate">
+                    <p className="font-bold text-base leading-tight mb-2 truncate">
                         {supervisor?.name || 'Unassigned'}
                     </p>
                     {supervisor && (
@@ -78,14 +112,14 @@ export const NeoTeamCard = ({ team, driver, supervisor, helper, isNight }) => {
                 </div>
 
                 {/* Helper Column */}
-                <div className="p-3 md:p-4 flex flex-col">
+                <div className="p-4 flex flex-col">
                     <div className="flex items-center space-x-2 mb-2 text-gray-400">
                         <Users size={14} />
-                        <span className="text-[10px] md:text-xs font-black uppercase tracking-wider">
+                        <span className="text-xs font-black uppercase tracking-wider">
                             Helper
                         </span>
                     </div>
-                    <p className="font-bold text-sm md:text-base leading-tight mb-2 truncate">
+                    <p className="font-bold text-base leading-tight mb-2 truncate">
                         {helper?.name || 'Unassigned'}
                     </p>
                     {helper && (

@@ -10,7 +10,7 @@ export const useShiftLogic = (currentHour, hotlineConfig, hotlineRoster, employe
     // Effective shift (view mode overrides time)
     const isEffectiveNight = viewMode ? viewMode === 'night' : isNightTime;
 
-    // Get current hotline operator
+    // Get current hotline operator ID (string doc ID from Firestore)
     const currentHotlineId = useMemo(() => {
         if (hotlineConfig === 'standard') {
             if (currentHour >= 8 && currentHour < 16) return hotlineRoster.morning;
@@ -23,12 +23,14 @@ export const useShiftLogic = (currentHour, hotlineConfig, hotlineRoster, employe
     }, [currentHour, hotlineConfig, hotlineRoster]);
 
     const currentShiftName = getShiftName(currentHour, hotlineConfig);
-    const activeHotlineOp = employees.find(e => e.id === parseInt(currentHotlineId, 10));
 
-    // Get active field supervisors
+    // Find by string doc ID (no parseInt)
+    const activeHotlineOp = employees.find(e => e.id === currentHotlineId);
+
+    // Get active field supervisors (string IDs)
     const currentFieldSupIds = isEffectiveNight ? fieldSupervisorRoster.night : fieldSupervisorRoster.day;
-    const activeFieldSupervisors = currentFieldSupIds
-        .map(id => employees.find(e => e.id === parseInt(id, 10)))
+    const activeFieldSupervisors = (currentFieldSupIds || [])
+        .map(id => employees.find(e => e.id === id))
         .filter(Boolean);
 
     return {

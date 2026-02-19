@@ -6,12 +6,12 @@ import { useRosterDirtyState } from '../../hooks/useRosterDirtyState';
 import { toast } from 'sonner';
 
 export const HotlineConfig = () => {
-    const { employees, hotlineConfig, setHotlineConfig, hotlineRoster, setHotlineRoster } =
+    const { employees, hotlineConfig, setHotlineConfig, hotlineRoster, setHotlineRoster, saveConfig } =
         useContext(RosterContext);
 
     const [isSaving, setIsSaving] = useState(false);
 
-    const hotlineOps = employees.filter(e => e.role === 'Hotline');
+    const hotlineOps = employees.filter(e => e.roleType === 'executive');
 
     // Dirty state tracking
     const rosterData = useMemo(() => ({
@@ -21,13 +21,13 @@ export const HotlineConfig = () => {
     const { isDirty, markClean } = useRosterDirtyState(rosterData);
 
     const handleHotlineAssign = (slotId, empId) => {
-        setHotlineRoster(prev => ({ ...prev, [slotId]: parseInt(empId, 10) }));
+        setHotlineRoster(prev => ({ ...prev, [slotId]: empId }));
     };
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            await new Promise(resolve => setTimeout(resolve, 800));
+            await saveConfig({ hotlineConfig, hotlineRoster });
             markClean();
             toast.success('Hotline roster updated successfully');
         } catch (error) {
@@ -140,8 +140,8 @@ export const HotlineConfig = () => {
                         onClick={handleSave}
                         disabled={isSaving}
                         className={`w-full mt-4 py-3 md:py-2 font-black text-sm uppercase tracking-wide border-2 border-black flex items-center justify-center gap-2 min-h-[48px] transition-all ${isSaving
-                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                : 'bg-black text-white hover:bg-gray-800 shadow-brutal active:shadow-none active:translate-x-1 active:translate-y-1'
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-black text-white hover:bg-gray-800 shadow-brutal active:shadow-none active:translate-x-1 active:translate-y-1'
                             }`}
                     >
                         {isSaving ? (

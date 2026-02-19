@@ -1,10 +1,26 @@
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Save, Camera, CheckCircle, CreditCard, FileText } from 'lucide-react';
+import { Plus, Save, CreditCard, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { employeeSchema } from '../../lib/validators';
 import { Input, Select, Button, Card } from '../../components/ui';
+
+const DESIGNATION_OPTIONS = [
+    { value: 'driver', label: 'Driver' },
+    { value: 'supervisor', label: 'Vehicle Supervisor' },
+    { value: 'helper', label: 'Helper' },
+    { value: 'field_supervisor', label: 'Field Supervisor' },
+    { value: 'executive_officer', label: 'Executive Officer (Hotline)' },
+];
+
+const ROLE_TYPE_MAP = {
+    driver: 'field_team',
+    supervisor: 'field_team',
+    helper: 'field_team',
+    field_supervisor: 'field_supervisor',
+    executive_officer: 'executive',
+};
 
 export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
     const {
@@ -19,18 +35,28 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
         defaultValues: {
             name: '',
             fatherName: '',
-            role: 'Driver',
+            designation: 'driver',
+            roleType: 'field_team',
             phone: '',
             whatsapp: '',
             cnic: '',
-            license: '',
+            licenseNo: '',
             onLeave: false,
             sameAsPhone: false,
+            availability: { day: true, night: false },
         },
     });
 
     const sameAsPhone = watch('sameAsPhone');
     const phone = watch('phone');
+    const designation = watch('designation');
+
+    // Auto-set roleType based on designation
+    useEffect(() => {
+        if (designation && ROLE_TYPE_MAP[designation]) {
+            setValue('roleType', ROLE_TYPE_MAP[designation]);
+        }
+    }, [designation, setValue]);
 
     // Sync whatsapp with phone if sameAsPhone is checked
     useEffect(() => {
@@ -43,29 +69,45 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
     useEffect(() => {
         if (editingEmployee) {
             reset({
-                ...editingEmployee,
+                name: editingEmployee.name || '',
+                fatherName: editingEmployee.fatherName || '',
+                designation: editingEmployee.designation || 'driver',
+                roleType: editingEmployee.roleType || 'field_team',
+                phone: editingEmployee.phone || '',
+                whatsapp: editingEmployee.whatsapp || '',
+                cnic: editingEmployee.cnic || '',
+                licenseNo: editingEmployee.licenseNo || '',
+                onLeave: editingEmployee.onLeave || false,
                 sameAsPhone: editingEmployee.phone === editingEmployee.whatsapp,
+                availability: editingEmployee.availability || { day: true, night: false },
             });
         } else {
             reset({
                 name: '',
                 fatherName: '',
-                role: 'Driver',
+                designation: 'driver',
+                roleType: 'field_team',
                 phone: '',
                 whatsapp: '',
                 cnic: '',
-                license: '',
+                licenseNo: '',
                 onLeave: false,
                 sameAsPhone: false,
+                availability: { day: true, night: false },
             });
         }
     }, [editingEmployee, reset]);
 
     const handleFormSubmit = async (data) => {
-        await onSubmit(data);
+        // Clean up sameAsPhone before saving
+        const { sameAsPhone: _, ...cleanData } = data;
+        await onSubmit(cleanData);
         reset();
         toast.success(editingEmployee ? 'Employee updated' : 'Employee added');
     };
+
+    const showLicense = designation === 'driver';
+    const showAvailability = designation === 'field_supervisor';
 
     return (
         <Card className="sticky top-24">
@@ -94,13 +136,13 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
                     <div className="grid grid-cols-2 gap-2">
                         <Input
                             label="Phone"
-                            placeholder="0300-1234567"
+                            placeholder="03001234567"
                             error={errors.phone?.message}
                             {...register('phone')}
                         />
                         <Input
                             label="WhatsApp"
-                            placeholder="0300-1234567"
+                            placeholder="03001234567"
                             disabled={sameAsPhone}
                             error={errors.whatsapp?.message}
                             {...register('whatsapp')}
@@ -110,11 +152,10 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                    <Select label="Role" error={errors.role?.message} {...register('role')}>
-                        <option value="Driver">Driver</option>
-                        <option value="Supervisor">Supervisor</option>
-                        <option value="Helper">Helper</option>
-                        <option value="Hotline">Hotline</option>
+                    <Select label="Designation" error={errors.designation?.message} {...register('designation')}>
+                        {DESIGNATION_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                     </Select>
 
                     <div>
@@ -124,7 +165,7 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
                         <div className="relative">
                             <CreditCard size={14} className="absolute left-2 top-3 text-gray-400" />
                             <input
-                                placeholder="42101-1234567-1"
+                                placeholder="4210112345671"
                                 {...register('cnic')}
                                 className="w-full border-2 border-black pl-8 p-2 font-mono text-xs focus:outline-none bg-gray-50 focus:bg-white"
                             />
@@ -135,19 +176,50 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-xs font-bold uppercase mb-1 text-gray-700">
-                        License Number
-                    </label>
-                    <div className="relative">
-                        <FileText size={14} className="absolute left-2 top-3 text-gray-400" />
-                        <input
-                            placeholder="License No (if Driver)"
-                            {...register('license')}
-                            className="w-full border-2 border-black pl-8 p-2 font-mono text-sm focus:outline-none bg-gray-50 focus:bg-white"
-                        />
+                {/* Hidden roleType field - auto-set by designation */}
+                <input type="hidden" {...register('roleType')} />
+
+                {showLicense && (
+                    <div>
+                        <label className="block text-xs font-bold uppercase mb-1 text-gray-700">
+                            License Number
+                        </label>
+                        <div className="relative">
+                            <FileText size={14} className="absolute left-2 top-3 text-gray-400" />
+                            <input
+                                placeholder="License No"
+                                {...register('licenseNo')}
+                                className="w-full border-2 border-black pl-8 p-2 font-mono text-sm focus:outline-none bg-gray-50 focus:bg-white"
+                            />
+                        </div>
                     </div>
-                </div>
+                )}
+
+                {showAvailability && (
+                    <div className="bg-gray-50 p-3 border-2 border-dashed border-gray-300">
+                        <label className="block text-xs font-bold uppercase mb-2 text-gray-700">
+                            Shift Availability
+                        </label>
+                        <div className="flex items-center gap-6">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    {...register('availability.day')}
+                                    className="w-5 h-5 border-2 border-black accent-orange-500"
+                                />
+                                <span className="text-sm font-bold">☀️ Day</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    {...register('availability.night')}
+                                    className="w-5 h-5 border-2 border-black accent-indigo-500"
+                                />
+                                <span className="text-sm font-bold">🌙 Night</span>
+                            </label>
+                        </div>
+                    </div>
+                )}
 
                 <div className="flex items-center space-x-2 py-2">
                     <input
