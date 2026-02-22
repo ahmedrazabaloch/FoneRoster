@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, MessageCircle } from 'lucide-react';
+import { Phone, MessageCircle, Headset } from 'lucide-react';
 import { LiveClock } from './LiveClock';
 import { formatWhatsAppUrl } from '../../lib/utils';
 
@@ -18,7 +18,7 @@ export const HotlinePanel = ({ currentOperator, shiftName, onDayShift }) => (
             </div>
         </div>
         <div className="flex items-center space-x-2 mb-2">
-            <Phone size={16} className="text-red-600" />
+            <Headset size={16} className="text-red-600" />
             <span className="font-black text-xs md:text-sm text-gray-500 uppercase tracking-wider">
                 Current Hotline Operator
             </span>

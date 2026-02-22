@@ -82,7 +82,7 @@ export const Header = () => {
                             <NavLink to="/login">
                                 <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                                     <Shield size={16} />
-                                    <span>Admin</span>
+                                    <span>Login</span>
                                 </Button>
                             </NavLink>
                         )}

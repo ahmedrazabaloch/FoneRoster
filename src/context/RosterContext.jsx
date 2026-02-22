@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useContext } from 'react';
 import {
     collection,
     doc,
@@ -10,10 +10,32 @@ import {
     serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { AuthContext } from './AuthContext';
 
 export const RosterContext = createContext(null);
 
+// ─── Audit logger ──────────────────────────────────────────────────
+// Fire-and-forget: logs to `adminActivityLogs` collection.
+// Never blocks or throws — audit failure must not break main ops.
+async function logActivity({ adminEmail, action, memberId, employeeId, changes }) {
+    try {
+        await addDoc(collection(db, 'adminActivityLogs'), {
+            adminEmail: adminEmail || 'unknown',
+            action,
+            memberId: memberId || null,
+            employeeId: employeeId || null,
+            changes: changes || null,
+            timestamp: serverTimestamp(),
+        });
+    } catch (err) {
+        console.warn('[AuditLog] Failed to write log:', err);
+    }
+}
+
 export const RosterProvider = ({ children }) => {
+    const auth = useContext(AuthContext);
+    const adminEmail = auth?.user?.email || 'unknown';
+
     // ─── State ────────────────────────────────────────────────
     const [users, setUsers] = useState([]);
     const [teams, setTeams] = useState([]);
@@ -31,11 +53,9 @@ export const RosterProvider = ({ children }) => {
     });
     const [loading, setLoading] = useState(true);
 
-    // ─── Derived lists (for backward compat with existing components) ────
-    // Components filter by designation/roleType, but we also provide
-    // the old "employees" name pointing to users for any legacy references.
+    // ─── Derived alias ────────────────────────────────────────
     const employees = users;
-    const setEmployees = setUsers; // alias
+    const setEmployees = setUsers;
 
     // ─── Real-time listeners ──────────────────────────────────
     useEffect(() => {
@@ -45,7 +65,6 @@ export const RosterProvider = ({ children }) => {
             if (loadCount >= 3) setLoading(false);
         };
 
-        // 1) Users collection
         const unsubUsers = onSnapshot(
             collection(db, 'users'),
             (snapshot) => {
@@ -53,13 +72,9 @@ export const RosterProvider = ({ children }) => {
                 setUsers(data);
                 checkLoaded();
             },
-            (error) => {
-                console.error('Users listener error:', error);
-                checkLoaded();
-            }
+            (error) => { console.error('Users listener error:', error); checkLoaded(); }
         );
 
-        // 2) Teams collection
         const unsubTeams = onSnapshot(
             collection(db, 'teams'),
             (snapshot) => {
@@ -67,13 +82,9 @@ export const RosterProvider = ({ children }) => {
                 setTeams(data);
                 checkLoaded();
             },
-            (error) => {
-                console.error('Teams listener error:', error);
-                checkLoaded();
-            }
+            (error) => { console.error('Teams listener error:', error); checkLoaded(); }
         );
 
-        // 3) Config document
         const unsubConfig = onSnapshot(
             doc(db, 'config', 'roster'),
             (snapshot) => {
@@ -85,20 +96,13 @@ export const RosterProvider = ({ children }) => {
                 }
                 checkLoaded();
             },
-            (error) => {
-                console.error('Config listener error:', error);
-                checkLoaded();
-            }
+            (error) => { console.error('Config listener error:', error); checkLoaded(); }
         );
 
-        return () => {
-            unsubUsers();
-            unsubTeams();
-            unsubConfig();
-        };
+        return () => { unsubUsers(); unsubTeams(); unsubConfig(); };
     }, []);
 
-    // ─── Config save helper ───────────────────────────────────
+    // ─── Config save ──────────────────────────────────────────
     const saveConfig = useCallback(async (updates) => {
         try {
             await setDoc(doc(db, 'config', 'roster'), updates, { merge: true });
@@ -108,39 +112,63 @@ export const RosterProvider = ({ children }) => {
         }
     }, []);
 
-    // ─── User CRUD ────────────────────────────────────────────
+    // ─── User CRUD (with audit logging) ──────────────────────
     const addEmployee = useCallback(async (userData) => {
         try {
             const docRef = await addDoc(collection(db, 'users'), {
                 ...userData,
                 createdAt: serverTimestamp(),
             });
+            // Audit log — fire and forget
+            logActivity({
+                adminEmail,
+                action: 'ADD_MEMBER',
+                memberId: docRef.id,
+                employeeId: userData.employeeId || null,
+                changes: userData,
+            });
             return { id: docRef.id, ...userData };
         } catch (error) {
             console.error('Error adding user:', error);
             throw error;
         }
-    }, []);
+    }, [adminEmail]);
 
     const updateEmployee = useCallback(async (id, updates) => {
         try {
             await updateDoc(doc(db, 'users', id), updates);
+            // Audit log
+            logActivity({
+                adminEmail,
+                action: 'EDIT_MEMBER',
+                memberId: id,
+                employeeId: updates.employeeId || null,
+                changes: updates,
+            });
         } catch (error) {
             console.error('Error updating user:', error);
             throw error;
         }
-    }, []);
+    }, [adminEmail]);
 
-    const deleteEmployee = useCallback(async (id) => {
+    const deleteEmployee = useCallback(async (id, employeeId) => {
         try {
+            // Log before delete so we still have the memberId
+            logActivity({
+                adminEmail,
+                action: 'DELETE_MEMBER',
+                memberId: id,
+                employeeId: employeeId || null,
+                changes: null,
+            });
             await deleteDoc(doc(db, 'users', id));
         } catch (error) {
             console.error('Error deleting user:', error);
             throw error;
         }
-    }, []);
+    }, [adminEmail]);
 
-    // ─── Team CRUD ────────────────────────────────────────────
+    // ─── Team CRUD (with audit logging) ──────────────────────
     const addTeam = useCallback(async (teamData) => {
         try {
             const docRef = await addDoc(collection(db, 'teams'), {
@@ -148,51 +176,51 @@ export const RosterProvider = ({ children }) => {
                 assignments: teamData.assignments || {},
                 createdAt: serverTimestamp(),
             });
+            logActivity({ adminEmail, action: 'ADD_TEAM', memberId: docRef.id, changes: teamData });
             return { id: docRef.id, ...teamData };
         } catch (error) {
             console.error('Error adding team:', error);
             throw error;
         }
-    }, []);
+    }, [adminEmail]);
 
     const updateTeam = useCallback(async (id, updates) => {
         try {
             await updateDoc(doc(db, 'teams', id), updates);
+            logActivity({ adminEmail, action: 'EDIT_TEAM', memberId: id, changes: updates });
         } catch (error) {
             console.error('Error updating team:', error);
             throw error;
         }
-    }, []);
+    }, [adminEmail]);
 
     const deleteTeam = useCallback(async (id) => {
         try {
+            logActivity({ adminEmail, action: 'DELETE_TEAM', memberId: id });
             await deleteDoc(doc(db, 'teams', id));
         } catch (error) {
             console.error('Error deleting team:', error);
             throw error;
         }
-    }, []);
+    }, [adminEmail]);
 
     // ─── Context value ────────────────────────────────────────
     const value = {
-        // Data
         users,
-        employees,       // alias for backward compat
+        employees,
         teams,
         hotlineConfig,
         hotlineRoster,
         fieldSupervisorRoster,
         loading,
 
-        // Setters (for local optimistic updates if needed)
         setEmployees,
-        setTeams: () => { }, // no-op: teams are Firestore-driven
-        setAssignments: () => { }, // no-op: assignments live inside team docs
+        setTeams: () => { },
+        setAssignments: () => { },
         setHotlineConfig,
         setHotlineRoster,
         setFieldSupervisorRoster,
 
-        // Firestore operations
         addEmployee,
         updateEmployee,
         deleteEmployee,
@@ -200,6 +228,7 @@ export const RosterProvider = ({ children }) => {
         updateTeam,
         deleteTeam,
         saveConfig,
+        logActivity: (params) => logActivity({ adminEmail, ...params }),
     };
 
     return <RosterContext.Provider value={value}>{children}</RosterContext.Provider>;
