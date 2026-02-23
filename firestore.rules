@@ -1,5 +1,4 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -7,64 +6,44 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function hasRole(role) {
-      return isAuthenticated() && request.auth.token.role == role;
-    }
-
     function isAdmin() {
-      return hasRole("admin") || hasRole("superadmin");
+      return isAuthenticated() &&
+             (request.auth.token.role == "admin" ||
+              request.auth.token.role == "superadmin");
     }
 
     function isSuperAdmin() {
-      return hasRole("superadmin");
+      return isAuthenticated() &&
+             request.auth.token.role == "superadmin";
     }
 
-    // ─────────────────────────────────────
-    // EMPLOYEES
-    // ─────────────────────────────────────
-    match /employees/{employeeId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAdmin();
-      allow delete: if false;                    // soft delete enforced
+    match /publicEmployees/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // ─────────────────────────────────────
-    // TEAMS
-    // ─────────────────────────────────────
-    match /teams/{teamId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAdmin();
-      allow delete: if isSuperAdmin();           // optional stricter rule
+    match /employees/{id} {
+      allow read, write: if isAdmin();
     }
 
-    // ─────────────────────────────────────
-    // CONFIG (singleton documents)
-    // ─────────────────────────────────────
-    match /hotlineConfig/{configId} {
-      allow read: if isAuthenticated();
+    match /teams/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /config/{id} {
+      allow read: if true;
       allow write: if isSuperAdmin();
     }
 
-    match /config/{configId} {
-      allow read: if isAuthenticated();
-      allow write: if isSuperAdmin();
+    match /users/{id} {
+      allow read, write: if isSuperAdmin();
     }
 
-    // ─────────────────────────────────────
-    // ADMIN ACTIVITY LOGS
-    // Immutable
-    // ─────────────────────────────────────
     match /adminActivityLogs/{logId} {
       allow read: if isAdmin();
       allow create: if isAdmin();
       allow update, delete: if false;
-    }
-
-    // ─────────────────────────────────────
-    // DENY EVERYTHING ELSE
-    // ─────────────────────────────────────
-    match /{document=**} {
-      allow read, write: if false;
     }
   }
 }

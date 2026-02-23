@@ -4,9 +4,12 @@ import { EmployeeForm } from './EmployeeForm';
 import { EmployeeTable } from './EmployeeTable';
 import { RosterContext } from '../../context/RosterContext';
 import { useWindowWidth } from '../../hooks/useWindowWidth';
+import { useAdminEmployees } from '../../hooks/useAdminEmployees';
 
 export const DirectoryManager = () => {
-    const { employees, addEmployee, updateEmployee, deleteEmployee, toggleLeave, loading } = useContext(RosterContext);
+    const { addEmployee, updateEmployee, deleteEmployee, toggleLeave } = useContext(RosterContext);
+    const { adminEmployees: employees, loading } = useAdminEmployees();
+
     const [editingEmployee, setEditingEmployee] = useState(null);
     const [formOpen, setFormOpen] = useState(false);
     const submittingRef = useRef(false); // double-submit guard

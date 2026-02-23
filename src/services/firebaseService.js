@@ -18,6 +18,7 @@ import {
     setDoc,
     updateDoc,
     runTransaction,
+    writeBatch,
     onSnapshot,
     query,
     orderBy,
@@ -34,6 +35,11 @@ const EMPLOYEE_ALLOWED_FIELDS = [
     'employeeId', 'name', 'fatherName', 'designation', 'roleType',
     'phone', 'whatsapp', 'cnic', 'licenseNo', 'onLeave', 'availability',
     'isDeleted', 'createdAt', 'updatedAt', 'deletedAt',
+];
+
+/** Fields explicitly allowed for the public dashboard */
+const PUBLIC_EMPLOYEE_FIELDS = [
+    'name', 'designation', 'phone', 'whatsapp', 'onLeave', 'availability', 'createdAt', 'updatedAt',
 ];
 
 /** Fields that must never appear in audit logs */
@@ -75,6 +81,28 @@ function sanitizeForAudit(data) {
     return clean;
 }
 
+/** Sanitize employee data to only include public fields before mirroring */
+function sanitizeForPublic(data) {
+    if (!data) return null;
+    return whitelistFields(data, PUBLIC_EMPLOYEE_FIELDS);
+}
+
+/** Mirrored write logic for public vs admin separation */
+async function writeEmployeeWithMirror(id, payload) {
+    const publicData = sanitizeForPublic(payload);
+    const batch = writeBatch(db);
+
+    batch.set(doc(db, 'employees', id), payload, { merge: true });
+
+    // publicData may be empty if the payload only contained private fields,
+    // but we still want to persist the merge to ensure consistency.
+    if (Object.keys(publicData).length > 0) {
+        batch.set(doc(db, 'publicEmployees', id), publicData, { merge: true });
+    }
+
+    await batch.commit();
+}
+
 /** Browser client metadata for audit enrichment */
 function getClientMeta() {
     return { userAgent: navigator?.userAgent || 'unknown' };
@@ -102,6 +130,21 @@ export const employeeService = {
         });
     },
 
+    /**
+     * Subscribe to public employees for the dashboard.
+     * No auth required, only sanitized fields available.
+     */
+    subscribePublic(onData, onError) {
+        const q = query(collection(db, 'publicEmployees'));
+        return onSnapshot(q, (snap) => {
+            console.log('[EmployeeService.subscribePublic] docs:', snap.size);
+            onData(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        }, (err) => {
+            console.error('[EmployeeService.subscribePublic]', err);
+            if (onError) onError(err);
+        });
+    },
+
     async add(data, adminEmail) {
         try {
             const trimmed = trimStrings(data);
@@ -113,16 +156,19 @@ export const employeeService = {
                 updatedAt: serverTimestamp(),
             }, EMPLOYEE_ALLOWED_FIELDS);
 
-            const ref = await addDoc(collection(db, 'employees'), payload);
+            // Create a new ref just to generate a unique ID
+            const newDocRef = doc(collection(db, 'employees'));
+            await writeEmployeeWithMirror(newDocRef.id, payload);
+
             logActivity({
                 adminEmail,
                 action: AUDIT_ACTIONS.ADD_MEMBER,
-                memberId: ref.id,
+                memberId: newDocRef.id,
                 employeeId: data.employeeId || null,
                 changes: sanitizeForAudit(data),
                 clientMeta: getClientMeta(),
             });
-            return ref.id;
+            return newDocRef.id;
         } catch (err) {
             console.error('[EmployeeService.add]', err);
             throw err;
@@ -157,7 +203,7 @@ export const employeeService = {
                 updatedAt: serverTimestamp(),
             }, EMPLOYEE_ALLOWED_FIELDS);
 
-            await updateDoc(doc(db, 'employees', docId), payload);
+            await writeEmployeeWithMirror(docId, payload);
             logActivity({
                 adminEmail,
                 action: AUDIT_ACTIONS.EDIT_MEMBER,
@@ -182,10 +228,14 @@ export const employeeService = {
                 changes: null,
                 clientMeta: getClientMeta(),
             });
-            await updateDoc(doc(db, 'employees', docId), {
+
+            const batch = writeBatch(db);
+            batch.update(doc(db, 'employees', docId), {
                 isDeleted: true,
                 deletedAt: serverTimestamp(),
             });
+            batch.delete(doc(db, 'publicEmployees', docId));
+            await batch.commit();
         } catch (err) {
             console.error('[EmployeeService.softDelete]', err);
             throw err;
@@ -199,16 +249,21 @@ export const employeeService = {
     async toggleLeave(docId, _currentStatus, employeeId, adminEmail) {
         try {
             const userRef = doc(db, 'employees', docId);
+            const publicRef = doc(db, 'publicEmployees', docId);
             let newStatus;
 
             await runTransaction(db, async (transaction) => {
                 const snap = await transaction.get(userRef);
                 if (!snap.exists()) throw new Error(`Employee ${docId} not found`);
                 newStatus = !snap.data().onLeave;
-                transaction.update(userRef, {
+
+                const updatePayload = {
                     onLeave: newStatus,
                     updatedAt: serverTimestamp(),
-                });
+                };
+                transaction.update(userRef, updatePayload);
+                // Also update the public document within the same transaction
+                transaction.update(publicRef, updatePayload);
             });
 
             logActivity({

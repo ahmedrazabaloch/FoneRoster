@@ -29,32 +29,17 @@ export const RosterProvider = ({ children }) => {
 
     // ─── Snapshot listeners (all cleaned up in return) ────────
     useEffect(() => {
-        // Wait until Firebase Auth has resolved before starting Firestore listeners.
-        // Starting listeners before auth resolves causes permission-denied errors.
-        console.log('[RosterContext] auth.loading:', auth.loading, '| auth.user:', auth?.user?.email || null);
-        if (auth.loading) return;
-
-        // If there is no signed-in user, Firestore rules will reject all reads.
-        // Clear state and mark as done loading so the UI shows the login screen.
-        if (!auth.user) {
-            setEmployees([]);
-            setTeams([]);
-            setLoading(false);
-            return;
-        }
-
         let loadCount = 0;
         const checkLoaded = () => { loadCount++; if (loadCount >= 3) setLoading(false); };
 
-        // Employee snapshot
-        const unsubEmployees = employeeService.subscribe(
+        // Employee snapshot (PUBLIC data only)
+        const unsubEmployees = employeeService.subscribePublic(
             (data) => {
-                console.log('[RosterContext] employees received:', data.length, data.map(e => e.name));
                 setEmployees(data);
                 checkLoaded();
             },
             (err) => {
-                console.error('[RosterContext] employeeService error:', err);
+                console.error('[RosterContext] public employeeService error:', err);
                 checkLoaded();
             }
         );
@@ -77,7 +62,7 @@ export const RosterProvider = ({ children }) => {
         );
 
         return () => { unsubEmployees(); unsubTeams(); unsubConfig(); };
-    }, [auth.loading, auth.user]);
+    }, []);
 
     // ─── Employee actions ─────────────────────────────────────
     const addEmployee = useCallback(async (userData) => {
