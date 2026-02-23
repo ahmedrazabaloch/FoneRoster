@@ -6,22 +6,7 @@ import { toast } from 'sonner';
 import { employeeSchema } from '../../lib/validators';
 import { formatCnic } from '../../utils/formatters';
 import { Input, Select, Button, Card } from '../../components/ui';
-
-const DESIGNATION_OPTIONS = [
-    { value: 'driver', label: 'Driver' },
-    { value: 'supervisor', label: 'Vehicle Supervisor' },
-    { value: 'helper', label: 'Helper' },
-    { value: 'field_supervisor', label: 'Field Supervisor' },
-    { value: 'executive_officer', label: 'Executive Officer (Hotline)' },
-];
-
-const ROLE_TYPE_MAP = {
-    driver: 'field_team',
-    supervisor: 'field_team',
-    helper: 'field_team',
-    field_supervisor: 'field_supervisor',
-    executive_officer: 'executive',
-};
+import { DESIGNATION_OPTIONS, ROLE_TYPE_MAP } from '../../config/designations';
 
 
 // Shared field class — consistent on every input regardless of icon/grid position
@@ -224,7 +209,11 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
                     label="Designation"
                     error={errors.designation?.message}
                     {...register('designation')}
-                />
+                >
+                    {DESIGNATION_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                </Select>
 
                 {/* ── CNIC ── full-width, same styling ── */}
                 <div className="w-full">

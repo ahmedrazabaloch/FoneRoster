@@ -85,15 +85,16 @@ function getClientMeta() {
 export const employeeService = {
     /**
      * Subscribe to active employees (isDeleted == false).
-     * Uses strict equality — requires composite index: isDeleted ASC + createdAt ASC
+     * Simple single-field where — no composite index required.
+     * Client-side table handles search/filtering, so DB-level sort is not needed.
      */
     subscribe(onData, onError) {
         const q = query(
-            collection(db, 'users'),
-            where('isDeleted', '==', false),
-            orderBy('createdAt', 'asc')
+            collection(db, 'employees'),
+            where('isDeleted', '==', false)
         );
         return onSnapshot(q, (snap) => {
+            console.log('[EmployeeService.subscribe] docs:', snap.size);
             onData(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         }, (err) => {
             console.error('[EmployeeService.subscribe]', err);
@@ -112,7 +113,7 @@ export const employeeService = {
                 updatedAt: serverTimestamp(),
             }, EMPLOYEE_ALLOWED_FIELDS);
 
-            const ref = await addDoc(collection(db, 'users'), payload);
+            const ref = await addDoc(collection(db, 'employees'), payload);
             logActivity({
                 adminEmail,
                 action: AUDIT_ACTIONS.ADD_MEMBER,
@@ -135,7 +136,7 @@ export const employeeService = {
     async update(docId, updates, adminEmail) {
         try {
             // Fetch existing to check immutable field
-            const snap = await getDoc(doc(db, 'users', docId));
+            const snap = await getDoc(doc(db, 'employees', docId));
             if (!snap.exists()) throw new Error(`Employee ${docId} not found`);
             const existing = snap.data();
 
@@ -156,7 +157,7 @@ export const employeeService = {
                 updatedAt: serverTimestamp(),
             }, EMPLOYEE_ALLOWED_FIELDS);
 
-            await updateDoc(doc(db, 'users', docId), payload);
+            await updateDoc(doc(db, 'employees', docId), payload);
             logActivity({
                 adminEmail,
                 action: AUDIT_ACTIONS.EDIT_MEMBER,
@@ -181,7 +182,7 @@ export const employeeService = {
                 changes: null,
                 clientMeta: getClientMeta(),
             });
-            await updateDoc(doc(db, 'users', docId), {
+            await updateDoc(doc(db, 'employees', docId), {
                 isDeleted: true,
                 deletedAt: serverTimestamp(),
             });
@@ -197,7 +198,7 @@ export const employeeService = {
      */
     async toggleLeave(docId, _currentStatus, employeeId, adminEmail) {
         try {
-            const userRef = doc(db, 'users', docId);
+            const userRef = doc(db, 'employees', docId);
             let newStatus;
 
             await runTransaction(db, async (transaction) => {
@@ -287,7 +288,13 @@ export const configService = {
     /** Always targets singleton doc "roster" — no other config docs allowed */
     subscribe(onData, onError) {
         return onSnapshot(doc(db, 'config', 'roster'), (snap) => {
-            if (snap.exists()) onData(snap.data());
+            if (snap.exists()) {
+                onData(snap.data());
+            } else {
+                // Doc doesn't exist yet — treat as empty config so loading unblocks
+                console.warn('[ConfigService.subscribe] config/roster doc not found — using defaults');
+                if (onError) onError(new Error('config/roster not found'));
+            }
         }, (err) => {
             console.error('[ConfigService.subscribe]', err);
             if (onError) onError(err);

@@ -38,13 +38,16 @@ export const EmployeeTable = ({ employees, onEdit, onDelete, onUpdate, onToggleL
     useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
     const filteredEmployees = useMemo(() => {
+        console.log('[EmployeeTable] employees prop length:', employees.length, '| search term:', `"${debouncedSearch}"`);
         const term = debouncedSearch.toLowerCase();
-        return employees.filter(
+        const filtered = employees.filter(
             emp =>
                 emp.name.toLowerCase().includes(term) ||
                 (emp.employeeId || '').toLowerCase().includes(term) ||
                 (emp.designation || '').toLowerCase().includes(term)
         );
+        console.log('[EmployeeTable] filteredEmployees.length:', filtered.length);
+        return filtered;
     }, [employees, debouncedSearch]);
 
     const totalPages = Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE);

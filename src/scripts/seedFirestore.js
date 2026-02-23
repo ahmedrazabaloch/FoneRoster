@@ -354,14 +354,18 @@ const configData = {
 
 // ─── SEED FUNCTIONS ───────────────────────────────────────────
 export async function seedUsers() {
-    console.log('Seeding users...');
-    for (const user of usersData) {
-        await addDoc(collection(db, 'users'), {
+    console.log('Seeding employees...');
+    for (let i = 0; i < usersData.length; i++) {
+        const user = usersData[i];
+        await addDoc(collection(db, 'employees'), {
             ...user,
+            employeeId: `EMP-${String(i + 1).padStart(3, '0')}`,
+            isDeleted: false,
             createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
         });
     }
-    console.log(`✅ ${usersData.length} users seeded`);
+    console.log(`✅ ${usersData.length} employees seeded`);
 }
 
 export async function seedTeams() {

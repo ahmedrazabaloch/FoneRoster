@@ -15,14 +15,8 @@ import { Edit, Trash2, User, Phone, MessageCircle, X, Save } from 'lucide-react'
 import { toast } from 'sonner';
 import { validateEmployee } from '../../utils/validateEmployee';
 import { formatCnic } from '../../utils/formatters';
+import { DESIGNATION_OPTIONS } from '../../config/designations';
 
-const DESIGNATION_OPTIONS = [
-    { value: 'driver', label: 'Driver' },
-    { value: 'supervisor', label: 'Vehicle Supervisor' },
-    { value: 'helper', label: 'Helper' },
-    { value: 'field_supervisor', label: 'Field Supervisor' },
-    { value: 'executive_officer', label: 'Executive Officer (Hotline)' },
-];
 
 export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate, onToggleLeave }) => {
     const roleName = (emp.designation || 'unknown').replace(/_/g, ' ');

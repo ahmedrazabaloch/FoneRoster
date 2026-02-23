@@ -1,6 +1,6 @@
 /**
  * migrate_isDeleted.js
- * One-time migration: backfill isDeleted=false on legacy user documents
+ * One-time migration: backfill isDeleted=false on legacy employee documents
  * that were created before the soft-delete field was introduced.
  *
  * Run via browser console or a temporary admin-only button.
@@ -14,14 +14,14 @@ import { collection, getDocs, doc, writeBatch } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 export async function runIsDeletedMigration() {
-    const snapshot = await getDocs(collection(db, 'users'));
+    const snapshot = await getDocs(collection(db, 'employees'));
     const batch = writeBatch(db);
     let count = 0;
 
     snapshot.docs.forEach(d => {
         const data = d.data();
         if (data.isDeleted === undefined || data.isDeleted === null) {
-            batch.update(doc(db, 'users', d.id), { isDeleted: false });
+            batch.update(doc(db, 'employees', d.id), { isDeleted: false });
             count++;
         }
     });
@@ -35,3 +35,4 @@ export async function runIsDeletedMigration() {
     console.log(`[Migration] Backfilled isDeleted=false on ${count} documents.`);
     return { migrated: count };
 }
+

@@ -23,7 +23,7 @@ service cloud.firestore {
     // EMPLOYEES
     // ─────────────────────────────────────
     match /employees/{employeeId} {
-      allow read: if isAuthenticated();           // not public anymore
+      allow read: if isAuthenticated();
       allow create, update: if isAdmin();
       allow delete: if false;                    // soft delete enforced
     }

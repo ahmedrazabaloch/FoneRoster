@@ -29,13 +29,34 @@ export const RosterProvider = ({ children }) => {
 
     // ─── Snapshot listeners (all cleaned up in return) ────────
     useEffect(() => {
+        // Wait until Firebase Auth has resolved before starting Firestore listeners.
+        // Starting listeners before auth resolves causes permission-denied errors.
+        console.log('[RosterContext] auth.loading:', auth.loading, '| auth.user:', auth?.user?.email || null);
+        if (auth.loading) return;
+
+        // If there is no signed-in user, Firestore rules will reject all reads.
+        // Clear state and mark as done loading so the UI shows the login screen.
+        if (!auth.user) {
+            setEmployees([]);
+            setTeams([]);
+            setLoading(false);
+            return;
+        }
+
         let loadCount = 0;
         const checkLoaded = () => { loadCount++; if (loadCount >= 3) setLoading(false); };
 
-        // Employee snapshot — filters isDeleted !== true via service query
+        // Employee snapshot
         const unsubEmployees = employeeService.subscribe(
-            (data) => { setEmployees(data); checkLoaded(); },
-            () => { checkLoaded(); }
+            (data) => {
+                console.log('[RosterContext] employees received:', data.length, data.map(e => e.name));
+                setEmployees(data);
+                checkLoaded();
+            },
+            (err) => {
+                console.error('[RosterContext] employeeService error:', err);
+                checkLoaded();
+            }
         );
 
         // Team snapshot
@@ -44,7 +65,7 @@ export const RosterProvider = ({ children }) => {
             () => { checkLoaded(); }
         );
 
-        // Config snapshot
+        // Config snapshot — call checkLoaded even when doc is missing
         const unsubConfig = configService.subscribe(
             (data) => {
                 if (data.hotlineConfig) setHotlineConfig(data.hotlineConfig);
@@ -52,11 +73,11 @@ export const RosterProvider = ({ children }) => {
                 if (data.fieldSupervisorRoster) setFieldSupervisorRoster(data.fieldSupervisorRoster);
                 checkLoaded();
             },
-            () => { checkLoaded(); }
+            () => { checkLoaded(); }   // doc missing or permission error — still unblock loading
         );
 
         return () => { unsubEmployees(); unsubTeams(); unsubConfig(); };
-    }, []);
+    }, [auth.loading, auth.user]);
 
     // ─── Employee actions ─────────────────────────────────────
     const addEmployee = useCallback(async (userData) => {
