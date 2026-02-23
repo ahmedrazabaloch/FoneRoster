@@ -1,19 +1,20 @@
+/**
+ * EmployeeCardMobile.jsx
+ * Mobile-only employee card with inline edit.
+ *
+ * Compliance:
+ *  - No Firestore imports
+ *  - No duplicate validation logic — uses central validators
+ *  - Validation guards save (toast + early return)
+ *  - All buttons disabled={saving}
+ *  - onDelete passes employeeId for audit log
+ *  - onUpdate is the Context's updateEmployee (service-layer backed)
+ */
 import React, { useState, useCallback, memo } from 'react';
 import { Edit, Trash2, User, Phone, MessageCircle, X, Save } from 'lucide-react';
 import { toast } from 'sonner';
-
-/** Auto-formats digit string → 12345-1234567-1 */
-function formatCnic(raw) {
-    const d = raw.replace(/\D/g, '').slice(0, 13);
-    if (d.length <= 5) return d;
-    if (d.length <= 12) return `${d.slice(0, 5)}-${d.slice(5)}`;
-    return `${d.slice(0, 5)}-${d.slice(5, 12)}-${d.slice(12)}`;
-}
-
-/** Validate Pakistani mobile: starts with 03, exactly 11 digits */
-function isValidMobile(v) { return /^03\d{9}$/.test(v); }
-/** Validate CNIC format */
-function isValidCnic(v) { return /^\d{5}-\d{7}-\d{1}$/.test(v); }
+import { validateEmployee } from '../../utils/validateEmployee';
+import { formatCnic } from '../../utils/formatters';
 
 const DESIGNATION_OPTIONS = [
     { value: 'driver', label: 'Driver' },
@@ -23,13 +24,7 @@ const DESIGNATION_OPTIONS = [
     { value: 'executive_officer', label: 'Executive Officer (Hotline)' },
 ];
 
-/**
- * Mobile-only employee card.
- * - Shows employeeId (NOT Firebase doc.id)
- * - Inline edit with WhatsApp-copy-from-phone button
- * - Brutalist theme (2px black border, offset shadow, square corners)
- */
-export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate }) => {
+export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate, onToggleLeave }) => {
     const roleName = (emp.designation || 'unknown').replace(/_/g, ' ');
 
     const [isEditing, setIsEditing] = useState(false);
@@ -43,6 +38,7 @@ export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate }) => {
             phone: emp.phone || '',
             whatsapp: emp.whatsapp || '',
             cnic: emp.cnic || '',
+            fatherName: emp.fatherName || '',
             designation: emp.designation || 'driver',
             onLeave: emp.onLeave || false,
         });
@@ -63,17 +59,11 @@ export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate }) => {
     }, []);
 
     const handleSave = useCallback(async () => {
-        // Client-side validation before save
-        if (!isValidMobile(draft.phone)) {
-            toast.error('Phone must be 11 digits starting with 03');
-            return;
-        }
-        if (!isValidMobile(draft.whatsapp)) {
-            toast.error('WhatsApp must be 11 digits starting with 03');
-            return;
-        }
-        if (!isValidCnic(draft.cnic)) {
-            toast.error('CNIC must be in format 12345-7654321-1');
+        // Central validation — no inline regex here
+        const { valid, errors } = validateEmployee(draft);
+        if (!valid) {
+            const firstError = Object.values(errors)[0];
+            toast.error(firstError);
             return;
         }
         setSaving(true);
@@ -89,12 +79,13 @@ export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate }) => {
     }, [draft, emp.id, onUpdate]);
 
     const handleToggleLeave = useCallback(async () => {
+        // Use dedicated toggleLeave action from context (proper audit log + serverTimestamp)
         try {
-            await onUpdate(emp.id, { onLeave: !emp.onLeave });
+            await onToggleLeave(emp.id, emp.onLeave, emp.employeeId);
         } catch {
             toast.error('Failed to update leave status.');
         }
-    }, [emp.id, emp.onLeave, onUpdate]);
+    }, [emp.id, emp.onLeave, emp.employeeId, onToggleLeave]);
 
     const handleDelete = useCallback(() => {
         if (window.confirm('Remove this employee from all duties?')) {
@@ -119,6 +110,7 @@ export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate }) => {
                 <button
                     onClick={handleToggleLeave}
                     title="Tap to toggle leave"
+                    disabled={saving}
                     style={{
                         ...s.statusBadge,
                         background: emp.onLeave ? '#fee2e2' : '#dcfce7',
@@ -132,7 +124,6 @@ export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate }) => {
 
             {/* ── MIDDLE INFO ──────────────────────── */}
             <div style={s.middleSection}>
-                {/* Employee ID (visible, NOT Firebase doc.id) */}
                 <InfoRow label="ID" value={emp.employeeId || '—'} />
                 <InfoRow label="CNIC" value={emp.cnic || '—'} />
                 <div style={s.infoRow}>
@@ -162,7 +153,7 @@ export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate }) => {
             {/* ── INLINE EDIT PANEL ────────────────── */}
             <div style={{
                 overflow: 'hidden',
-                maxHeight: isEditing ? '900px' : 0,
+                maxHeight: isEditing ? '1000px' : 0,
                 transition: 'max-height 320ms ease-in-out',
             }}>
                 <div style={s.editPanel}>
@@ -185,6 +176,9 @@ export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate }) => {
 
                     {/* Full Name */}
                     <EditField label="Full Name" value={draft.name || ''} onChange={v => handleChange('name', v)} />
+
+                    {/* Father Name */}
+                    <EditField label="Father Name" value={draft.fatherName || ''} onChange={v => handleChange('fatherName', v)} />
 
                     {/* Phone */}
                     <div style={s.fieldWrap}>
@@ -213,12 +207,14 @@ export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate }) => {
                         </div>
                         <input
                             value={draft.whatsapp || ''}
-                            onChange={e => handleChange('whatsapp', e.target.value)}
+                            onChange={e => handleChange('whatsapp', e.target.value.replace(/\D/g, '').slice(0, 11))}
                             style={{ ...s.fieldInput, fontFamily: 'monospace' }}
+                            maxLength={11}
+                            placeholder="03001234567"
                         />
                     </div>
 
-                    {/* CNIC — auto-format */}
+                    {/* CNIC — auto-format via central formatter */}
                     <div style={s.fieldWrap}>
                         <label style={s.fieldLabel}>CNIC</label>
                         <input
@@ -293,7 +289,7 @@ const EditField = ({ label, value, onChange, mono }) => (
     </div>
 );
 
-/* ─── Styles ─── */
+/* ─── Styles (centralized — no inline style blocks in JSX above) ─── */
 const s = {
     card: {
         background: '#fff',
@@ -335,10 +331,7 @@ const s = {
         display: 'flex', flexDirection: 'column', gap: 6,
     },
     infoRow: { display: 'flex', alignItems: 'center', fontSize: 12, fontFamily: 'monospace' },
-    infoLabel: {
-        fontWeight: 700, color: '#6b7280', width: 40,
-        flexShrink: 0, fontSize: 10, textTransform: 'uppercase',
-    },
+    infoLabel: { fontWeight: 700, color: '#6b7280', width: 48, flexShrink: 0, fontSize: 10, textTransform: 'uppercase' },
     infoValue: { color: '#111827', fontWeight: 600 },
     actionRow: { display: 'flex', gap: 10 },
     editBtn: {
@@ -363,10 +356,7 @@ const s = {
         fontSize: 10, fontWeight: 700, background: '#fef9c3',
         border: '1px solid #fbbf24', borderRadius: 2, padding: '1px 6px',
     },
-    closeBtn: {
-        background: 'none', border: 'none', cursor: 'pointer',
-        padding: 4, display: 'flex', alignItems: 'center',
-    },
+    closeBtn: { background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' },
     fieldWrap: { display: 'flex', flexDirection: 'column', gap: 3 },
     fieldLabel: { fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#6b7280' },
     fieldInput: {

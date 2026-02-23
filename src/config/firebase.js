@@ -21,4 +21,8 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
+if (typeof window !== "undefined") {
+    window.__auth = auth;
+}
+
 export default app;

@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Save, FileText, Hash } from 'lucide-react';
 import { toast } from 'sonner';
 import { employeeSchema } from '../../lib/validators';
+import { formatCnic } from '../../utils/formatters';
 import { Input, Select, Button, Card } from '../../components/ui';
 
 const DESIGNATION_OPTIONS = [
@@ -22,16 +23,6 @@ const ROLE_TYPE_MAP = {
     executive_officer: 'executive',
 };
 
-/**
- * Auto-formats a raw digit string into CNIC format: 12345-1234567-1
- * Strips non-digits, then inserts dashes at positions 5 and 12.
- */
-function formatCnic(raw) {
-    const digits = raw.replace(/\D/g, '').slice(0, 13);
-    if (digits.length <= 5) return digits;
-    if (digits.length <= 12) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
-    return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
-}
 
 // Shared field class — consistent on every input regardless of icon/grid position
 const fieldClass =

@@ -212,7 +212,7 @@ export const FieldTeamConfig = () => {
                 {/* Day Shift */}
                 <div className="p-0 md:p-6 bg-white border-2 border-black shadow-brutal md:shadow-brutal-lg">
                     {/* Mobile: Collapsible header */}
-                    <button
+                    <div
                         onClick={toggleDay}
                         className="md:hidden w-full flex items-center justify-between p-3 min-h-[48px]"
                     >
@@ -226,7 +226,7 @@ export const FieldTeamConfig = () => {
                                 <Plus size={16} />
                             </Button>
                         </div>
-                    </button>
+                    </div>
 
                     {/* Desktop: Always-visible header */}
                     <div className="hidden md:flex justify-between items-center mb-6">
@@ -248,7 +248,7 @@ export const FieldTeamConfig = () => {
                 {/* Night Shift */}
                 <div className="p-0 md:p-6 bg-white border-2 border-black shadow-brutal md:shadow-brutal-lg">
                     {/* Mobile: Collapsible header */}
-                    <button
+                    <div
                         onClick={toggleNight}
                         className="md:hidden w-full flex items-center justify-between p-3 min-h-[48px]"
                     >
@@ -262,7 +262,7 @@ export const FieldTeamConfig = () => {
                                 <Plus size={16} />
                             </Button>
                         </div>
-                    </button>
+                    </div>
 
                     {/* Desktop: Always-visible header */}
                     <div className="hidden md:flex justify-between items-center mb-6">

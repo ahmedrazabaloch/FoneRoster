@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext, useEffect } from 'react';
+import React, { useState, useCallback, useContext, useEffect, useRef } from 'react';
 import { Plus, ChevronDown } from 'lucide-react';
 import { EmployeeForm } from './EmployeeForm';
 import { EmployeeTable } from './EmployeeTable';
@@ -6,9 +6,10 @@ import { RosterContext } from '../../context/RosterContext';
 import { useWindowWidth } from '../../hooks/useWindowWidth';
 
 export const DirectoryManager = () => {
-    const { employees, addEmployee, updateEmployee, deleteEmployee, loading } = useContext(RosterContext);
+    const { employees, addEmployee, updateEmployee, deleteEmployee, toggleLeave, loading } = useContext(RosterContext);
     const [editingEmployee, setEditingEmployee] = useState(null);
     const [formOpen, setFormOpen] = useState(false);
+    const submittingRef = useRef(false); // double-submit guard
 
     const windowWidth = useWindowWidth();
     const isMobile = windowWidth <= 768;
@@ -21,13 +22,19 @@ export const DirectoryManager = () => {
     }, [isMobile, editingEmployee]);
 
     const handleSubmit = useCallback(async (data) => {
-        if (editingEmployee) {
-            await updateEmployee(editingEmployee.id, data);
-            setEditingEmployee(null);
-            if (isMobile) setFormOpen(false);
-        } else {
-            await addEmployee(data);
-            if (isMobile) setFormOpen(false);
+        if (submittingRef.current) return;
+        submittingRef.current = true;
+        try {
+            if (editingEmployee) {
+                await updateEmployee(editingEmployee.id, data);
+                setEditingEmployee(null);
+                if (isMobile) setFormOpen(false);
+            } else {
+                await addEmployee(data);
+                if (isMobile) setFormOpen(false);
+            }
+        } finally {
+            submittingRef.current = false;
         }
     }, [editingEmployee, addEmployee, updateEmployee, isMobile]);
 
@@ -36,8 +43,11 @@ export const DirectoryManager = () => {
     }, []);
 
     const handleDelete = useCallback(async (id, employeeId) => {
+        if (submittingRef.current) return;
         if (window.confirm('Are you sure? This will remove them from all current duties.')) {
-            await deleteEmployee(id, employeeId);
+            submittingRef.current = true;
+            try { await deleteEmployee(id, employeeId); }
+            finally { submittingRef.current = false; }
         }
     }, [deleteEmployee]);
 
@@ -131,6 +141,7 @@ export const DirectoryManager = () => {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onUpdate={updateEmployee}
+                    onToggleLeave={toggleLeave}
                     loading={loading}
                 />
             </div>

@@ -1,25 +1,38 @@
+/**
+ * AuthContext.jsx — Extended with RBAC role resolution
+ *
+ * Role is loaded from Firebase custom claims on login/auth state change.
+ * Available via: const { role } = useContext(AuthContext);
+ */
 import React, { createContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { getUserRole, ROLES } from '../utils/rbac';
 
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [role, setRole] = useState(ROLES.VIEWER);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user);
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            setUser(firebaseUser);
+            if (firebaseUser) {
+                const resolvedRole = await getUserRole(firebaseUser);
+                setRole(resolvedRole);
+            } else {
+                setRole(ROLES.VIEWER);
+            }
             setLoading(false);
         });
-
         return unsubscribe;
     }, []);
 
     const login = async (email, password) => {
         try {
-            const result = await signInWithEmailAndPassword(auth, email, password);
+            const result = await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
             return { success: true, user: result.user };
         } catch (error) {
             console.error('Login error:', error);
@@ -39,6 +52,7 @@ export const AuthProvider = ({ children }) => {
 
     const value = {
         user,
+        role,       // one of ROLES.VIEWER | ROLES.ADMIN | ROLES.SUPERADMIN
         loading,
         login,
         logout,

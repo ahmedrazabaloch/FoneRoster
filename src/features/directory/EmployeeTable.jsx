@@ -17,7 +17,7 @@ const FADE_IN_STYLE = `
   to   { opacity: 1; transform: translateY(0); }
 }`;
 
-export const EmployeeTable = ({ employees, onEdit, onDelete, onUpdate, loading }) => {
+export const EmployeeTable = ({ employees, onEdit, onDelete, onUpdate, onToggleLeave, loading }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -43,7 +43,6 @@ export const EmployeeTable = ({ employees, onEdit, onDelete, onUpdate, loading }
             emp =>
                 emp.name.toLowerCase().includes(term) ||
                 (emp.employeeId || '').toLowerCase().includes(term) ||
-                emp.id.toString().includes(debouncedSearch) ||
                 (emp.designation || '').toLowerCase().includes(term)
         );
     }, [employees, debouncedSearch]);
@@ -154,6 +153,7 @@ export const EmployeeTable = ({ employees, onEdit, onDelete, onUpdate, loading }
                                     onEdit={onEdit}
                                     onDelete={onDelete}
                                     onUpdate={onUpdate}
+                                    onToggleLeave={onToggleLeave}
                                 />
                             </div>
                         ))

@@ -21,6 +21,9 @@ const LoginPage = lazy(() =>
 const AdminPage = lazy(() =>
   import('./pages/AdminPage').then(m => ({ default: m.AdminPage }))
 );
+const LogsPage = lazy(() =>
+  import('./pages/LogsPage').then(m => ({ default: m.LogsPage }))
+);
 
 function App() {
   return (
@@ -46,6 +49,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <AdminPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/logs"
+                    element={
+                      <ProtectedRoute>
+                        <LogsPage />
                       </ProtectedRoute>
                     }
                   />

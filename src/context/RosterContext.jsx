@@ -1,234 +1,136 @@
+/**
+ * RosterContext.jsx
+ * Application-wide state management.
+ *
+ * Rules enforced:
+ *  - ZERO Firestore imports — all persistence delegated to service layer
+ *  - Snapshot listeners returned and cleaned up in useEffect
+ *  - No serverTimestamp(), deleteDoc, or addDoc here
+ *  - Context exposes service function wrappers bound to adminEmail
+ */
 import React, { createContext, useState, useEffect, useCallback, useContext } from 'react';
-import {
-    collection,
-    doc,
-    addDoc,
-    setDoc,
-    updateDoc,
-    deleteDoc,
-    onSnapshot,
-    serverTimestamp,
-} from 'firebase/firestore';
-import { db } from '../config/firebase';
 import { AuthContext } from './AuthContext';
+import { employeeService, teamService, configService } from '../services/firebaseService';
+import { logActivity, AUDIT_ACTIONS } from '../services/auditService';
 
 export const RosterContext = createContext(null);
-
-// ─── Audit logger ──────────────────────────────────────────────────
-// Fire-and-forget: logs to `adminActivityLogs` collection.
-// Never blocks or throws — audit failure must not break main ops.
-async function logActivity({ adminEmail, action, memberId, employeeId, changes }) {
-    try {
-        await addDoc(collection(db, 'adminActivityLogs'), {
-            adminEmail: adminEmail || 'unknown',
-            action,
-            memberId: memberId || null,
-            employeeId: employeeId || null,
-            changes: changes || null,
-            timestamp: serverTimestamp(),
-        });
-    } catch (err) {
-        console.warn('[AuditLog] Failed to write log:', err);
-    }
-}
 
 export const RosterProvider = ({ children }) => {
     const auth = useContext(AuthContext);
     const adminEmail = auth?.user?.email || 'unknown';
 
     // ─── State ────────────────────────────────────────────────
-    const [users, setUsers] = useState([]);
+    const [employees, setEmployees] = useState([]);
     const [teams, setTeams] = useState([]);
     const [hotlineConfig, setHotlineConfig] = useState('standard');
-    const [hotlineRoster, setHotlineRoster] = useState({
-        morning: '',
-        evening: '',
-        night: '',
-        shift1: '',
-        shift2: '',
-    });
-    const [fieldSupervisorRoster, setFieldSupervisorRoster] = useState({
-        day: [],
-        night: [],
-    });
+    const [hotlineRoster, setHotlineRoster] = useState({ morning: '', evening: '', night: '', shift1: '', shift2: '' });
+    const [fieldSupervisorRoster, setFieldSupervisorRoster] = useState({ day: [], night: [] });
     const [loading, setLoading] = useState(true);
 
-    // ─── Derived alias ────────────────────────────────────────
-    const employees = users;
-    const setEmployees = setUsers;
-
-    // ─── Real-time listeners ──────────────────────────────────
+    // ─── Snapshot listeners (all cleaned up in return) ────────
     useEffect(() => {
         let loadCount = 0;
-        const checkLoaded = () => {
-            loadCount++;
-            if (loadCount >= 3) setLoading(false);
-        };
+        const checkLoaded = () => { loadCount++; if (loadCount >= 3) setLoading(false); };
 
-        const unsubUsers = onSnapshot(
-            collection(db, 'users'),
-            (snapshot) => {
-                const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-                setUsers(data);
-                checkLoaded();
-            },
-            (error) => { console.error('Users listener error:', error); checkLoaded(); }
+        // Employee snapshot — filters isDeleted !== true via service query
+        const unsubEmployees = employeeService.subscribe(
+            (data) => { setEmployees(data); checkLoaded(); },
+            () => { checkLoaded(); }
         );
 
-        const unsubTeams = onSnapshot(
-            collection(db, 'teams'),
-            (snapshot) => {
-                const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-                setTeams(data);
-                checkLoaded();
-            },
-            (error) => { console.error('Teams listener error:', error); checkLoaded(); }
+        // Team snapshot
+        const unsubTeams = teamService.subscribe(
+            (data) => { setTeams(data); checkLoaded(); },
+            () => { checkLoaded(); }
         );
 
-        const unsubConfig = onSnapshot(
-            doc(db, 'config', 'roster'),
-            (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.data();
-                    if (data.hotlineConfig) setHotlineConfig(data.hotlineConfig);
-                    if (data.hotlineRoster) setHotlineRoster(data.hotlineRoster);
-                    if (data.fieldSupervisorRoster) setFieldSupervisorRoster(data.fieldSupervisorRoster);
-                }
+        // Config snapshot
+        const unsubConfig = configService.subscribe(
+            (data) => {
+                if (data.hotlineConfig) setHotlineConfig(data.hotlineConfig);
+                if (data.hotlineRoster) setHotlineRoster(data.hotlineRoster);
+                if (data.fieldSupervisorRoster) setFieldSupervisorRoster(data.fieldSupervisorRoster);
                 checkLoaded();
             },
-            (error) => { console.error('Config listener error:', error); checkLoaded(); }
+            () => { checkLoaded(); }
         );
 
-        return () => { unsubUsers(); unsubTeams(); unsubConfig(); };
+        return () => { unsubEmployees(); unsubTeams(); unsubConfig(); };
     }, []);
 
-    // ─── Config save ──────────────────────────────────────────
-    const saveConfig = useCallback(async (updates) => {
-        try {
-            await setDoc(doc(db, 'config', 'roster'), updates, { merge: true });
-        } catch (error) {
-            console.error('Error saving config:', error);
-            throw error;
-        }
-    }, []);
-
-    // ─── User CRUD (with audit logging) ──────────────────────
+    // ─── Employee actions ─────────────────────────────────────
     const addEmployee = useCallback(async (userData) => {
-        try {
-            const docRef = await addDoc(collection(db, 'users'), {
-                ...userData,
-                createdAt: serverTimestamp(),
-            });
-            // Audit log — fire and forget
-            logActivity({
-                adminEmail,
-                action: 'ADD_MEMBER',
-                memberId: docRef.id,
-                employeeId: userData.employeeId || null,
-                changes: userData,
-            });
-            return { id: docRef.id, ...userData };
-        } catch (error) {
-            console.error('Error adding user:', error);
-            throw error;
-        }
+        return employeeService.add(userData, adminEmail);
     }, [adminEmail]);
 
     const updateEmployee = useCallback(async (id, updates) => {
-        try {
-            await updateDoc(doc(db, 'users', id), updates);
-            // Audit log
-            logActivity({
-                adminEmail,
-                action: 'EDIT_MEMBER',
-                memberId: id,
-                employeeId: updates.employeeId || null,
-                changes: updates,
-            });
-        } catch (error) {
-            console.error('Error updating user:', error);
-            throw error;
-        }
+        return employeeService.update(id, updates, adminEmail);
     }, [adminEmail]);
 
+    /**
+     * Soft delete — sets isDeleted=true.
+     * Physical documents are never removed.
+     * @param {string} id          Firestore doc ID (internal)
+     * @param {string} employeeId  Human-readable ID for audit log
+     */
     const deleteEmployee = useCallback(async (id, employeeId) => {
-        try {
-            // Log before delete so we still have the memberId
-            logActivity({
-                adminEmail,
-                action: 'DELETE_MEMBER',
-                memberId: id,
-                employeeId: employeeId || null,
-                changes: null,
-            });
-            await deleteDoc(doc(db, 'users', id));
-        } catch (error) {
-            console.error('Error deleting user:', error);
-            throw error;
-        }
+        return employeeService.softDelete(id, employeeId, adminEmail);
     }, [adminEmail]);
 
-    // ─── Team CRUD (with audit logging) ──────────────────────
+    const toggleLeave = useCallback(async (id, currentStatus, employeeId) => {
+        return employeeService.toggleLeave(id, currentStatus, employeeId, adminEmail);
+    }, [adminEmail]);
+
+    // ─── Team actions ─────────────────────────────────────────
     const addTeam = useCallback(async (teamData) => {
-        try {
-            const docRef = await addDoc(collection(db, 'teams'), {
-                ...teamData,
-                assignments: teamData.assignments || {},
-                createdAt: serverTimestamp(),
-            });
-            logActivity({ adminEmail, action: 'ADD_TEAM', memberId: docRef.id, changes: teamData });
-            return { id: docRef.id, ...teamData };
-        } catch (error) {
-            console.error('Error adding team:', error);
-            throw error;
-        }
+        return teamService.add(teamData, adminEmail);
     }, [adminEmail]);
 
     const updateTeam = useCallback(async (id, updates) => {
-        try {
-            await updateDoc(doc(db, 'teams', id), updates);
-            logActivity({ adminEmail, action: 'EDIT_TEAM', memberId: id, changes: updates });
-        } catch (error) {
-            console.error('Error updating team:', error);
-            throw error;
-        }
+        return teamService.update(id, updates, adminEmail);
     }, [adminEmail]);
 
     const deleteTeam = useCallback(async (id) => {
-        try {
-            logActivity({ adminEmail, action: 'DELETE_TEAM', memberId: id });
-            await deleteDoc(doc(db, 'teams', id));
-        } catch (error) {
-            console.error('Error deleting team:', error);
-            throw error;
-        }
+        return teamService.remove(id, adminEmail);
     }, [adminEmail]);
+
+    // ─── Config action ────────────────────────────────────────
+    const saveConfig = useCallback(async (updates) => {
+        return configService.save(updates);
+    }, []);
 
     // ─── Context value ────────────────────────────────────────
     const value = {
-        users,
         employees,
+        users: employees,       // backward-compat alias
         teams,
         hotlineConfig,
         hotlineRoster,
         fieldSupervisorRoster,
         loading,
 
-        setEmployees,
-        setTeams: () => { },
-        setAssignments: () => { },
+        // State setters exposed for config panels
         setHotlineConfig,
         setHotlineRoster,
         setFieldSupervisorRoster,
+        // No-op stubs kept for backward compat with roster panels
+        setTeams: () => { },
+        setAssignments: () => { },
+        setEmployees: () => { },
 
+        // Actions
         addEmployee,
         updateEmployee,
         deleteEmployee,
+        toggleLeave,
         addTeam,
         updateTeam,
         deleteTeam,
         saveConfig,
+
+        // Audit helper for panels that need to log non-CRUD events
         logActivity: (params) => logActivity({ adminEmail, ...params }),
+        AUDIT_ACTIONS,
     };
 
     return <RosterContext.Provider value={value}>{children}</RosterContext.Provider>;
