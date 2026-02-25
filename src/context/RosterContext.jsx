@@ -7,10 +7,11 @@
  *  - Snapshot listeners returned and cleaned up in useEffect
  *  - No serverTimestamp(), deleteDoc, or addDoc here
  *  - Context exposes service function wrappers bound to adminEmail
+ *  - Loading uses explicit boolean flags (not numeric counters)
  */
-import React, { createContext, useState, useEffect, useCallback, useContext } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { AuthContext } from './AuthContext';
-import { employeeService, teamService, configService } from '../services/firebaseService';
+import { employeeService, teamService, vehicleService, configService } from '../services/firebaseService';
 import { logActivity, AUDIT_ACTIONS } from '../services/auditService';
 
 export const RosterContext = createContext(null);
@@ -22,47 +23,65 @@ export const RosterProvider = ({ children }) => {
     // ─── State ────────────────────────────────────────────────
     const [employees, setEmployees] = useState([]);
     const [teams, setTeams] = useState([]);
+    const [vehicles, setVehicles] = useState([]);
     const [hotlineConfig, setHotlineConfig] = useState('standard');
     const [hotlineRoster, setHotlineRoster] = useState({ morning: '', evening: '', night: '', shift1: '', shift2: '' });
     const [fieldSupervisorRoster, setFieldSupervisorRoster] = useState({ day: [], night: [] });
-    const [loading, setLoading] = useState(true);
+
+    // ─── Explicit loading flags ───────────────────────────────
+    const [employeesLoaded, setEmployeesLoaded] = useState(false);
+    const [teamsLoaded, setTeamsLoaded] = useState(false);
+    const [vehiclesLoaded, setVehiclesLoaded] = useState(false);
+    const [configLoaded, setConfigLoaded] = useState(false);
+
+    const loading = !employeesLoaded || !teamsLoaded || !vehiclesLoaded || !configLoaded;
 
     // ─── Snapshot listeners (all cleaned up in return) ────────
     useEffect(() => {
-        let loadCount = 0;
-        const checkLoaded = () => { loadCount++; if (loadCount >= 3) setLoading(false); };
-
         // Employee snapshot (PUBLIC data only)
         const unsubEmployees = employeeService.subscribePublic(
             (data) => {
                 setEmployees(data);
-                checkLoaded();
+                setEmployeesLoaded(true);
             },
             (err) => {
                 console.error('[RosterContext] public employeeService error:', err);
-                checkLoaded();
+                setEmployeesLoaded(true);
             }
         );
 
         // Team snapshot
         const unsubTeams = teamService.subscribe(
-            (data) => { setTeams(data); checkLoaded(); },
-            () => { checkLoaded(); }
+            (data) => { setTeams(data); setTeamsLoaded(true); },
+            () => { setTeamsLoaded(true); }
         );
 
-        // Config snapshot — call checkLoaded even when doc is missing
+        // Vehicle snapshot
+        const unsubVehicles = vehicleService.subscribe(
+            (data) => { setVehicles(data); setVehiclesLoaded(true); },
+            () => { setVehiclesLoaded(true); }
+        );
+
+        // Config snapshot
         const unsubConfig = configService.subscribe(
             (data) => {
                 if (data.hotlineConfig) setHotlineConfig(data.hotlineConfig);
                 if (data.hotlineRoster) setHotlineRoster(data.hotlineRoster);
                 if (data.fieldSupervisorRoster) setFieldSupervisorRoster(data.fieldSupervisorRoster);
-                checkLoaded();
+                setConfigLoaded(true);
             },
-            () => { checkLoaded(); }   // doc missing or permission error — still unblock loading
+            () => { setConfigLoaded(true); }   // doc missing or permission error — still unblock loading
         );
 
-        return () => { unsubEmployees(); unsubTeams(); unsubConfig(); };
+        return () => { unsubEmployees(); unsubTeams(); unsubVehicles(); unsubConfig(); };
     }, []);
+
+    // ─── Vehicles lookup map (O(1) by ID) ─────────────────────
+    const vehiclesMap = useMemo(() => {
+        const map = {};
+        vehicles.forEach(v => { map[v.id] = v; });
+        return map;
+    }, [vehicles]);
 
     // ─── Employee actions ─────────────────────────────────────
     const addEmployee = useCallback(async (userData) => {
@@ -100,6 +119,15 @@ export const RosterProvider = ({ children }) => {
         return teamService.remove(id, adminEmail);
     }, [adminEmail]);
 
+    // ─── Vehicle actions ──────────────────────────────────────
+    const addVehicle = useCallback(async (vehicleData) => {
+        return vehicleService.add(vehicleData, adminEmail);
+    }, [adminEmail]);
+
+    const deleteVehicle = useCallback(async (id) => {
+        return vehicleService.remove(id, adminEmail);
+    }, [adminEmail]);
+
     // ─── Config action ────────────────────────────────────────
     const saveConfig = useCallback(async (updates) => {
         return configService.save(updates);
@@ -110,6 +138,8 @@ export const RosterProvider = ({ children }) => {
         employees,
         users: employees,       // backward-compat alias
         teams,
+        vehicles,
+        vehiclesMap,
         hotlineConfig,
         hotlineRoster,
         fieldSupervisorRoster,
@@ -132,6 +162,8 @@ export const RosterProvider = ({ children }) => {
         addTeam,
         updateTeam,
         deleteTeam,
+        addVehicle,
+        deleteVehicle,
         saveConfig,
 
         // Audit helper for panels that need to log non-CRUD events

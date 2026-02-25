@@ -11,7 +11,11 @@ export const HotlineConfig = () => {
 
     const [isSaving, setIsSaving] = useState(false);
 
-    const hotlineOps = employees.filter(e => e.roleType === 'executive');
+    // Dual-safe: supports both roleType (post-migration) and designation (always present)
+    const hotlineOps = employees.filter(e =>
+        e.roleType?.toLowerCase() === 'executive' ||
+        e.designation === 'executive_officer'
+    );
 
     // Dirty state tracking
     const rosterData = useMemo(() => ({

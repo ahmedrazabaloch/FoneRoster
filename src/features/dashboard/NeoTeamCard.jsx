@@ -30,7 +30,7 @@ const MobilePersonRow = ({ label, icon: Icon, person }) => (
     </div>
 );
 
-export const NeoTeamCard = ({ team, driver, supervisor, helper, isNight }) => {
+export const NeoTeamCard = ({ team, vehicleDisplay, driver, supervisor, helper, isNight }) => {
     return (
         <div
             className={`bg-white border-2 md:border-4 border-black shadow-brutal md:shadow-brutal-lg p-0 flex flex-col h-full ${isNight ? 'shadow-indigo-900' : ''
@@ -58,7 +58,7 @@ export const NeoTeamCard = ({ team, driver, supervisor, helper, isNight }) => {
                     <div className="flex items-center space-x-1">
                         <Truck size={14} />
                         <span className="font-black font-mono text-xs md:text-sm">
-                            {team.vehicle || 'N/A'}
+                            {vehicleDisplay || team.vehicle || 'Vehicle Not Found'}
                         </span>
                     </div>
                 </div>

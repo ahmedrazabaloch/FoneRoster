@@ -57,18 +57,31 @@ export const HotlinePanel = ({ currentOperator, shiftName, onDayShift }) => (
             </div>
         </div>
         <div className="grid grid-cols-2 gap-3 md:gap-4 mt-auto">
-            <a
-                href={`tel:${currentOperator?.phone}`}
-                className="flex items-center justify-center bg-green-600 text-white border-2 border-black py-2.5 md:py-3 font-black uppercase text-sm shadow-brutal-sm md:shadow-brutal hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-brutal-active transition-all min-h-[44px]"
-            >
-                <Phone size={18} className="mr-2" /> Call
-            </a>
-            <a
-                href={formatWhatsAppUrl(currentOperator?.whatsapp)}
-                className="flex items-center justify-center bg-gray-900 text-white border-2 border-black py-2.5 md:py-3 font-black uppercase text-sm shadow-brutal-sm md:shadow-brutal hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-brutal-active transition-all min-h-[44px]"
-            >
-                <MessageCircle size={18} className="mr-2" /> WhatsApp
-            </a>
+            {currentOperator ? (
+                <>
+                    <a
+                        href={`tel:${currentOperator.phone}`}
+                        className="flex items-center justify-center bg-green-600 text-white border-2 border-black py-2.5 md:py-3 font-black uppercase text-sm shadow-brutal-sm md:shadow-brutal hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-brutal-active transition-all min-h-[44px]"
+                    >
+                        <Phone size={18} className="mr-2" /> Call
+                    </a>
+                    <a
+                        href={formatWhatsAppUrl(currentOperator.whatsapp)}
+                        className="flex items-center justify-center bg-gray-900 text-white border-2 border-black py-2.5 md:py-3 font-black uppercase text-sm shadow-brutal-sm md:shadow-brutal hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-brutal-active transition-all min-h-[44px]"
+                    >
+                        <MessageCircle size={18} className="mr-2" /> WhatsApp
+                    </a>
+                </>
+            ) : (
+                <>
+                    <span className="flex items-center justify-center bg-gray-300 text-gray-500 border-2 border-black py-2.5 md:py-3 font-black uppercase text-sm min-h-[44px] cursor-not-allowed">
+                        <Phone size={18} className="mr-2" /> Call
+                    </span>
+                    <span className="flex items-center justify-center bg-gray-300 text-gray-500 border-2 border-black py-2.5 md:py-3 font-black uppercase text-sm min-h-[44px] cursor-not-allowed">
+                        <MessageCircle size={18} className="mr-2" /> WhatsApp
+                    </span>
+                </>
+            )}
         </div>
     </div>
 );

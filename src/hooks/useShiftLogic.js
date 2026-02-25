@@ -24,8 +24,15 @@ export const useShiftLogic = (currentHour, hotlineConfig, hotlineRoster, employe
 
     const currentShiftName = getShiftName(currentHour, hotlineConfig);
 
-    // Find by string doc ID (no parseInt)
-    const activeHotlineOp = employees.find(e => e.id === currentHotlineId);
+    // Find by string doc ID — guard empty or mismatched IDs
+    const activeHotlineOp = useMemo(() => {
+        if (!currentHotlineId) return null;
+        const found = employees.find(e => e.id === currentHotlineId);
+        if (!found && employees.length > 0) {
+            console.warn('[useShiftLogic] Hotline ID mismatch — no employee for:', currentHotlineId);
+        }
+        return found || null;
+    }, [employees, currentHotlineId]);
 
     // Get active field supervisors (string IDs)
     const currentFieldSupIds = isEffectiveNight ? fieldSupervisorRoster.night : fieldSupervisorRoster.day;

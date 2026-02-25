@@ -6,9 +6,10 @@ export const FieldSupervisorControl = () => {
     const { employees, fieldSupervisorRoster, setFieldSupervisorRoster, saveConfig } = useContext(RosterContext);
     const [isOpen, setIsOpen] = useState(false);
 
-    // Filter by roleType for field supervisors
+    // Dual-safe: supports roleType (post-migration) and designation (always present)
     const fieldSupervisors = employees.filter(
-        e => e.roleType === 'field_supervisor'
+        e => e.roleType?.toLowerCase().trim() === 'field_supervisor' ||
+            e.designation?.toLowerCase().trim() === 'field_supervisor'
     );
 
     const isSupervisorAssigned = (supId, shift) => {

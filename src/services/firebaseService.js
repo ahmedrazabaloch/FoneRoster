@@ -14,6 +14,7 @@ import {
     collection,
     doc,
     getDoc,
+    getDocs,
     addDoc,
     setDoc,
     updateDoc,
@@ -39,7 +40,7 @@ const EMPLOYEE_ALLOWED_FIELDS = [
 
 /** Fields explicitly allowed for the public dashboard */
 const PUBLIC_EMPLOYEE_FIELDS = [
-    'name', 'designation', 'phone', 'whatsapp', 'onLeave', 'availability', 'createdAt', 'updatedAt',
+    'name', 'designation', 'roleType', 'phone', 'whatsapp', 'onLeave', 'availability', 'createdAt', 'updatedAt',
 ];
 
 /** Fields that must never appear in audit logs */
@@ -332,6 +333,71 @@ export const teamService = {
             await deleteDoc(doc(db, 'teams', docId));
         } catch (err) {
             console.error('[TeamService.remove]', err);
+            throw err;
+        }
+    },
+};
+
+// ─── Vehicle Service ───────────────────────────────────────────────
+
+const VEHICLE_TYPE_REGEX = /^[A-Z\s]{2,30}$/;
+
+export const vehicleService = {
+    subscribe(onData, onError) {
+        const q = query(collection(db, 'vehicles'), orderBy('createdAt', 'asc'));
+        return onSnapshot(q, (snap) => {
+            onData(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        }, (err) => {
+            console.error('[VehicleService.subscribe]', err);
+            if (onError) onError(err);
+        });
+    },
+
+    /**
+     * Add a vehicle. Enforces uniqueness of `number` client-side.
+     * Type is free-text, normalized to uppercase.
+     */
+    async add(data, adminEmail) {
+        const normalizedNumber = data.number.trim().toUpperCase();
+        const normalizedType = data.type.trim().toUpperCase().replace(/\s+/g, ' ');
+
+        if (!VEHICLE_TYPE_REGEX.test(normalizedType)) {
+            throw new Error('Vehicle type must be 2-30 letters (no numbers or special characters).');
+        }
+
+        // Client-side uniqueness check
+        const dupeCheck = await getDocs(
+            query(collection(db, 'vehicles'), where('number', '==', normalizedNumber))
+        );
+        if (!dupeCheck.empty) {
+            throw new Error('Vehicle number already exists.');
+        }
+
+        try {
+            const ref = await addDoc(collection(db, 'vehicles'), {
+                type: normalizedType,
+                number: normalizedNumber,
+                isActive: true,
+                createdAt: serverTimestamp(),
+            });
+            logActivity({
+                adminEmail, action: 'ADD_VEHICLE',
+                memberId: ref.id, changes: { type: normalizedType, number: normalizedNumber },
+            });
+            return ref.id;
+        } catch (err) {
+            console.error('[VehicleService.add]', err);
+            throw err;
+        }
+    },
+
+    async remove(docId, adminEmail) {
+        try {
+            logActivity({ adminEmail, action: 'DELETE_VEHICLE', memberId: docId });
+            const { deleteDoc } = await import('firebase/firestore');
+            await deleteDoc(doc(db, 'vehicles', docId));
+        } catch (err) {
+            console.error('[VehicleService.remove]', err);
             throw err;
         }
     },
