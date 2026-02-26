@@ -1,5 +1,6 @@
 import React, { useContext, useState, useMemo } from 'react';
-import { Trash2, ChevronDown, ChevronRight, Truck } from 'lucide-react';
+import { Trash2, Truck, Sun, Moon, ChevronDown, ChevronRight } from 'lucide-react';
+import { CollapsibleSection } from '../../components/ui/CollapsibleSection';
 import { RosterContext } from '../../context/RosterContext';
 import { SaveBar } from '../../components/ui/SaveBar';
 import { FieldSupervisorControl } from './FieldSupervisorControl';
@@ -33,9 +34,7 @@ export const FieldTeamConfig = () => {
 
     const [isSaving, setIsSaving] = useState(false);
 
-    // Collapsible state (mobile only — desktop always shows content)
-    const [dayOpen, setDayOpen] = useState(false);
-    const [nightOpen, setNightOpen] = useState(false);
+
 
     // ─── Create Team form state ───────────────────────────
     const [createForm, setCreateForm] = useState({ ...EMPTY_FORM });
@@ -197,15 +196,7 @@ export const FieldTeamConfig = () => {
         }
     };
 
-    const toggleDay = () => {
-        setDayOpen(prev => !prev);
-        if (!dayOpen) setNightOpen(false);
-    };
 
-    const toggleNight = () => {
-        setNightOpen(prev => !prev);
-        if (!nightOpen) setDayOpen(false);
-    };
 
     const renderTeamCard = (team) => {
         const currentVehicleId = team.vehicleId || '';
@@ -310,15 +301,15 @@ export const FieldTeamConfig = () => {
     const nightTeams = teams.filter(t => t.shift === 'Night');
 
     return (
-        <>
-            {/* Field Supervisor Control — extracted dedicated section */}
+        <div className="space-y-4 pb-20">
+            {/* Field Supervisor Control */}
             <FieldSupervisorControl />
 
-            {/* Vehicle Management — centralized CRUD */}
+            {/* Vehicle Management */}
             <VehicleManagement />
 
             {/* ─── Create Team ─────────────────────────────── */}
-            <div className="mb-4 md:mb-8 bg-white border-2 border-black shadow-brutal md:shadow-brutal-lg">
+            <div className="bg-white border-2 border-black shadow-brutal md:shadow-brutal-lg">
                 <div
                     onClick={() => setCreateOpen(prev => !prev)}
                     className="w-full flex items-center justify-between p-3 md:p-5 cursor-pointer min-h-[48px]"
@@ -457,73 +448,38 @@ export const FieldTeamConfig = () => {
                 )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 pb-20">
-                {/* Day Shift */}
-                <div className="p-0 md:p-6 bg-white border-2 border-black shadow-brutal md:shadow-brutal-lg">
-                    {/* Mobile: Collapsible header */}
-                    <div
-                        onClick={toggleDay}
-                        className="md:hidden w-full flex items-center justify-between p-3 min-h-[48px]"
-                    >
-                        <div className="flex items-center gap-2">
-                            {dayOpen ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-                            <h3 className="font-black text-base uppercase">Day Shift Configuration</h3>
-                        </div>
-                        <span className="text-xs font-bold text-gray-400">{dayTeams.length} teams</span>
-                    </div>
-
-                    {/* Desktop: Always-visible header */}
-                    <div className="hidden md:flex justify-between items-center mb-6">
-                        <h3 className="font-black text-xl uppercase">Day Shift Configuration</h3>
-                        <span className="text-sm font-bold text-gray-400">{dayTeams.length} teams</span>
-                    </div>
-
-                    {/* Content */}
-                    <div className={`${dayOpen ? 'block' : 'hidden'} md:block p-3 md:p-0`}>
-                        <div className="space-y-6 md:space-y-8">
-                            {dayTeams.length === 0 && (
-                                <p className="text-sm text-gray-400 font-bold uppercase text-center py-6">No day teams yet. Use Create Team above.</p>
-                            )}
-                            {dayTeams.map(renderTeamCard)}
-                        </div>
-                    </div>
+            {/* Day Shift */}
+            <CollapsibleSection
+                title="Day Shift Configuration"
+                icon={Sun}
+                badge={`${dayTeams.length} Teams`}
+                defaultOpen={false}
+            >
+                <div className="space-y-6 md:space-y-8">
+                    {dayTeams.length === 0 && (
+                        <p className="text-sm text-gray-400 font-bold uppercase text-center py-6">No day teams yet. Use Create Team above.</p>
+                    )}
+                    {dayTeams.map(renderTeamCard)}
                 </div>
+            </CollapsibleSection>
 
-                {/* Night Shift */}
-                <div className="p-0 md:p-6 bg-white border-2 border-black shadow-brutal md:shadow-brutal-lg">
-                    {/* Mobile: Collapsible header */}
-                    <div
-                        onClick={toggleNight}
-                        className="md:hidden w-full flex items-center justify-between p-3 min-h-[48px]"
-                    >
-                        <div className="flex items-center gap-2">
-                            {nightOpen ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-                            <h3 className="font-black text-base uppercase text-indigo-900">Night Shift Configuration</h3>
-                        </div>
-                        <span className="text-xs font-bold text-gray-400">{nightTeams.length} teams</span>
-                    </div>
-
-                    {/* Desktop: Always-visible header */}
-                    <div className="hidden md:flex justify-between items-center mb-6">
-                        <h3 className="font-black text-xl uppercase text-indigo-900">
-                            Night Shift Configuration
-                        </h3>
-                        <span className="text-sm font-bold text-gray-400">{nightTeams.length} teams</span>
-                    </div>
-
-                    {/* Content */}
-                    <div className={`${nightOpen ? 'block' : 'hidden'} md:block p-3 md:p-0`}>
-                        <div className="space-y-6 md:space-y-8">
-                            {nightTeams.length === 0 && (
-                                <p className="text-sm text-gray-400 font-bold uppercase text-center py-6">No night teams yet. Use Create Team above.</p>
-                            )}
-                            {nightTeams.map(renderTeamCard)}
-                        </div>
-                    </div>
+            {/* Night Shift */}
+            <CollapsibleSection
+                title="Night Shift Configuration"
+                icon={Moon}
+                badge={`${nightTeams.length} Teams`}
+                defaultOpen={false}
+                titleClass="text-indigo-900"
+            >
+                <div className="space-y-6 md:space-y-8">
+                    {nightTeams.length === 0 && (
+                        <p className="text-sm text-gray-400 font-bold uppercase text-center py-6">No night teams yet. Use Create Team above.</p>
+                    )}
+                    {nightTeams.map(renderTeamCard)}
                 </div>
-            </div>
+            </CollapsibleSection>
 
             <SaveBar isDirty={isDirty} isSaving={isSaving} onSave={handleSave} />
-        </>
+        </div>
     );
 };

@@ -133,8 +133,8 @@ export const RosterProvider = ({ children }) => {
         return configService.save(updates);
     }, []);
 
-    // ─── Context value ────────────────────────────────────────
-    const value = {
+    // ─── Context value (memoized to reduce consumer re-renders) ──
+    const value = useMemo(() => ({
         employees,
         users: employees,       // backward-compat alias
         teams,
@@ -169,7 +169,13 @@ export const RosterProvider = ({ children }) => {
         // Audit helper for panels that need to log non-CRUD events
         logActivity: (params) => logActivity({ adminEmail, ...params }),
         AUDIT_ACTIONS,
-    };
+    }), [
+        employees, teams, vehicles, vehiclesMap,
+        hotlineConfig, hotlineRoster, fieldSupervisorRoster, loading,
+        addEmployee, updateEmployee, deleteEmployee, toggleLeave,
+        addTeam, updateTeam, deleteTeam, addVehicle, deleteVehicle,
+        saveConfig, adminEmail,
+    ]);
 
     return <RosterContext.Provider value={value}>{children}</RosterContext.Provider>;
 };

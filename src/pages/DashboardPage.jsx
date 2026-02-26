@@ -36,16 +36,16 @@ export const DashboardPage = () => {
 
     const getEmpDetails = id => employees.find(e => e.id === id);
 
-    // Backward-compat vehicle resolver
+    // Vehicle resolver — returns ONLY the registration number
     const resolveVehicleDisplay = (team) => {
         if (team.vehicleId && vehiclesMap[team.vehicleId]) {
-            const v = vehiclesMap[team.vehicleId];
-            return `${v.type} — ${v.number}`;
+            return vehiclesMap[team.vehicleId].number;
         }
+        // Legacy fallback: team.vehicle may be "TYPE — NUMBER" or just "NUMBER"
         if (team.vehicle) {
-            const match = vehicles.find(v => v.number === team.vehicle);
-            if (match) return `${match.type} — ${match.number}`;
-            return team.vehicle; // legacy string fallback
+            const parts = team.vehicle.split(' — ');
+            const numberPart = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+            return numberPart.trim();
         }
         return 'No Vehicle';
     };

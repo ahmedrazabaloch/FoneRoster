@@ -30,7 +30,7 @@ const MobilePersonRow = ({ label, icon: Icon, person }) => (
     </div>
 );
 
-export const NeoTeamCard = ({ team, vehicleDisplay, driver, supervisor, helper, isNight }) => {
+export const NeoTeamCard = React.memo(({ team, vehicleDisplay, driver, supervisor, helper, isNight }) => {
     return (
         <div
             className={`bg-white border-2 md:border-4 border-black shadow-brutal md:shadow-brutal-lg p-0 flex flex-col h-full ${isNight ? 'shadow-indigo-900' : ''
@@ -58,12 +58,11 @@ export const NeoTeamCard = ({ team, vehicleDisplay, driver, supervisor, helper, 
                     <div className="flex items-center space-x-1">
                         <Truck size={14} />
                         <span className="font-black font-mono text-xs md:text-sm">
-                            {vehicleDisplay || team.vehicle || 'Vehicle Not Found'}
+                            {vehicleDisplay || 'No Vehicle'}
                         </span>
                     </div>
                 </div>
             </div>
-
             {/* Mobile: Compact horizontal rows */}
             <div className="md:hidden p-2">
                 <MobilePersonRow label="Driver" icon={User} person={driver} />
@@ -148,4 +147,4 @@ export const NeoTeamCard = ({ team, vehicleDisplay, driver, supervisor, helper, 
             </div>
         </div>
     );
-};
+});

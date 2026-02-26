@@ -69,7 +69,7 @@ export const VehicleManagement = () => {
     const activeVehicles = vehicles.filter(v => v.isActive !== false);
 
     return (
-        <div className="mb-4 md:mb-8 bg-white border-2 border-black shadow-brutal md:shadow-brutal-lg">
+        <div className="bg-white border-2 border-black shadow-brutal md:shadow-brutal-lg">
             <div
                 onClick={() => setIsOpen(prev => !prev)}
                 className="w-full flex items-center justify-between p-3 md:p-5 cursor-pointer min-h-[48px]"

@@ -6,3 +6,4 @@ export { Badge } from './Badge';
 export { BrutalCard } from './BrutalCard';
 export { BrutalButton } from './BrutalButton';
 export { BrutalInput } from './BrutalInput';
+export { CollapsibleSection } from './CollapsibleSection';
