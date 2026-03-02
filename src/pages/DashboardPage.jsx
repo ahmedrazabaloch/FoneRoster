@@ -1,56 +1,36 @@
-import React, { useContext } from 'react';
+/**
+ * DashboardPage.jsx — Public Dashboard (Lock Policy Enforced)
+ *
+ * This page is PERMANENTLY PUBLIC.  It renders identically for:
+ *   - Anonymous users (not logged in)
+ *   - Team Users / Viewers
+ *   - Admins
+ *   - Super Admins
+ *
+ * ALL data is pre-sanitized by useDashboardData().
+ * NO raw Firestore documents, IDs, or sensitive fields reach this page.
+ */
+import React from 'react';
 import { Sun, Moon, RefreshCw } from 'lucide-react';
-import { RosterContext } from '../context/RosterContext';
-import { useClock } from '../hooks/useClock';
-import { useShiftLogic } from '../hooks/useShiftLogic';
+import { useDashboardData } from '../hooks/useDashboardData';
 import { HotlinePanel } from '../features/dashboard/HotlinePanel';
 import { NeoTeamCard } from '../features/dashboard/NeoTeamCard';
 import { FieldSupervisorCard } from '../features/dashboard/FieldSupervisorCard';
 import { TeamCardSkeleton } from '../features/dashboard/TeamCardSkeleton';
 
 export const DashboardPage = () => {
-    const { currentHour } = useClock();
     const {
-        employees,
-        teams,
-        vehicles,
-        vehiclesMap,
-        hotlineConfig,
-        hotlineRoster,
-        fieldSupervisorRoster,
         loading,
-    } = useContext(RosterContext);
-
-    const {
+        currentHour,
+        isNightTime,
         isEffectiveNight,
         viewMode,
         setViewMode,
         currentShiftName,
-        activeHotlineOp,
-        activeFieldSupervisors,
-    } = useShiftLogic(currentHour, hotlineConfig, hotlineRoster, employees, fieldSupervisorRoster);
-
-    const activeTeams = teams.filter(t =>
-        isEffectiveNight ? t.shift === 'Night' : t.shift === 'Day'
-    );
-
-    const getEmpDetails = id => employees.find(e => e.id === id);
-
-    // Vehicle resolver — returns ONLY the registration number
-    const resolveVehicleDisplay = (team) => {
-        if (team.vehicleId && vehiclesMap[team.vehicleId]) {
-            return vehiclesMap[team.vehicleId].number;
-        }
-        // Legacy fallback: team.vehicle may be "TYPE — NUMBER" or just "NUMBER"
-        if (team.vehicle) {
-            const parts = team.vehicle.split(' — ');
-            const numberPart = parts.length > 1 ? parts[parts.length - 1] : parts[0];
-            return numberPart.trim();
-        }
-        return 'No Vehicle';
-    };
-
-    const isNightTime = currentHour >= 20 || currentHour < 8;
+        hotlineOperator,
+        fieldSupervisors,
+        activeTeams,
+    } = useDashboardData();
 
     return (
         <div className="max-w-[1440px] mx-auto px-3 md:px-4 py-4 md:py-8">
@@ -58,11 +38,11 @@ export const DashboardPage = () => {
                 {/* Left Column: Sticky Hotline Panel */}
                 <div className="w-full lg:w-1/3 xl:w-1/4 flex-shrink-0 lg:sticky lg:top-[72px] space-y-4 md:space-y-6 z-10">
                     <HotlinePanel
-                        currentOperator={activeHotlineOp}
+                        currentOperator={hotlineOperator}
                         shiftName={currentShiftName}
                         onDayShift={!isNightTime}
                     />
-                    <FieldSupervisorCard supervisors={activeFieldSupervisors} />
+                    <FieldSupervisorCard supervisors={fieldSupervisors} />
                 </div>
 
                 {/* Right Column: Scrollable Teams */}
@@ -152,20 +132,17 @@ export const DashboardPage = () => {
                                 {[1, 2, 3, 4].map(i => <TeamCardSkeleton key={i} />)}
                             </>
                         ) : (
-                            activeTeams.map(team => {
-                                const teamAssign = team.assignments || {};
-                                return (
-                                    <NeoTeamCard
-                                        key={team.id}
-                                        team={team}
-                                        vehicleDisplay={resolveVehicleDisplay(team)}
-                                        driver={getEmpDetails(teamAssign.Driver)}
-                                        supervisor={getEmpDetails(teamAssign.Supervisor)}
-                                        helper={getEmpDetails(teamAssign.Helper)}
-                                        isNight={isEffectiveNight}
-                                    />
-                                );
-                            })
+                            activeTeams.map(team => (
+                                <NeoTeamCard
+                                    key={team.id}
+                                    team={team}
+                                    vehicleDisplay={team.vehicleNumber}
+                                    driver={team.driver}
+                                    supervisor={team.supervisor}
+                                    helper={team.helper}
+                                    isNight={isEffectiveNight}
+                                />
+                            ))
                         )}
                     </div>
                 </div>

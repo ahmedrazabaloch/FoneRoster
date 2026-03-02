@@ -24,6 +24,15 @@ const AdminPage = lazy(() =>
 const LogsPage = lazy(() =>
   import('./pages/LogsPage').then(m => ({ default: m.LogsPage }))
 );
+const SuperAdminPage = lazy(() =>
+  import('./pages/SuperAdminPage').then(m => ({ default: m.SuperAdminPage }))
+);
+const TeamPage = lazy(() =>
+  import('./pages/TeamPage').then(m => ({ default: m.TeamPage }))
+);
+const VerifyPage = lazy(() =>
+  import('./pages/VerifyPage').then(m => ({ default: m.VerifyPage }))
+);
 
 function App() {
   return (
@@ -44,10 +53,19 @@ function App() {
                   <Route path="/" element={<DashboardPage />} />
                   <Route path="/search" element={<SearchPage />} />
                   <Route path="/login" element={<LoginPage />} />
+                  <Route path="/verify/:id" element={<VerifyPage />} />
+                  <Route
+                    path="/team"
+                    element={
+                      <ProtectedRoute requiredRole="team_user">
+                        <TeamPage />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route
                     path="/admin"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdminPage />
                       </ProtectedRoute>
                     }
@@ -55,8 +73,16 @@ function App() {
                   <Route
                     path="/admin/logs"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <LogsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/super-admin"
+                    element={
+                      <ProtectedRoute requiredRole="superadmin">
+                        <SuperAdminPage />
                       </ProtectedRoute>
                     }
                   />

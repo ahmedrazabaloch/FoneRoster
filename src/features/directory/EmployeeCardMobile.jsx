@@ -11,14 +11,14 @@
  *  - onUpdate is the Context's updateEmployee (service-layer backed)
  */
 import React, { useState, useCallback, memo } from 'react';
-import { Edit, Trash2, User, Phone, MessageCircle, X, Save } from 'lucide-react';
+import { Edit, Trash2, User, Phone, MessageCircle, X, Save, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { validateEmployee } from '../../utils/validateEmployee';
 import { formatCnic } from '../../utils/formatters';
 import { DESIGNATION_OPTIONS } from '../../config/designations';
 
 
-export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate, onToggleLeave }) => {
+export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate, onToggleLeave, onIdCard }) => {
     const roleName = (emp.designation || 'unknown').replace(/_/g, ' ');
 
     const [isEditing, setIsEditing] = useState(false);
@@ -142,6 +142,12 @@ export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate, onToggleLeave
                     <Trash2 size={14} style={{ marginRight: 5 }} />
                     Delete
                 </button>
+                {onIdCard && (
+                    <button onClick={onIdCard} style={s.idCardBtn} disabled={saving}>
+                        <CreditCard size={14} style={{ marginRight: 5 }} />
+                        ID Card
+                    </button>
+                )}
             </div>
 
             {/* ── INLINE EDIT PANEL ────────────────── */}
@@ -337,6 +343,12 @@ const s = {
     deleteBtn: {
         flex: 1, minHeight: 44,
         background: '#EF4444', color: '#fff', fontWeight: 700, fontSize: 13,
+        border: '2px solid #000', borderRadius: 2,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+    },
+    idCardBtn: {
+        flex: 1, minHeight: 44,
+        background: '#3B82F6', color: '#fff', fontWeight: 700, fontSize: 13,
         border: '2px solid #000', borderRadius: 2,
         display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
     },

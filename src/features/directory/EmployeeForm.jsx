@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Save, FileText, Hash } from 'lucide-react';
+import { Plus, Save, FileText, Hash, Camera, X, Loader } from 'lucide-react';
 import { toast } from 'sonner';
 import { employeeSchema } from '../../lib/validators';
 import { formatCnic } from '../../utils/formatters';
@@ -16,6 +16,10 @@ const errorClass = ' border-red-600 bg-red-50';
 
 export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [photoUrl, setPhotoUrl] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState(null);
+    const fileInputRef = useRef(null);
 
     const {
         register,
@@ -77,6 +81,7 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
                 sameAsPhone: editingEmployee.phone === editingEmployee.whatsapp,
                 availability: editingEmployee.availability || { day: true, night: false },
             });
+            setPhotoUrl(editingEmployee.photoUrl || null);
         } else {
             reset({
                 employeeId: '',
@@ -92,6 +97,8 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
                 sameAsPhone: false,
                 availability: { day: true, night: false },
             });
+            setPhotoUrl(null);
+            setUploadError(null);
         }
     }, [editingEmployee, reset]);
 
@@ -101,12 +108,41 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
         setValue('cnic', formatted, { shouldValidate: true });
     };
 
+    const handlePhotoSelect = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadError(null);
+        setUploading(true);
+        try {
+            const { uploadImage } = await import('../../services/cloudinaryService');
+            const url = await uploadImage(file);
+            setPhotoUrl(url);
+            toast.success('Photo uploaded');
+        } catch (err) {
+            setUploadError(err.message);
+            toast.error(err.message);
+        } finally {
+            setUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
     const handleFormSubmit = async (data) => {
+        if (uploading) {
+            toast.error('Wait for photo upload to finish');
+            return;
+        }
+        if (uploadError) {
+            toast.error('Fix photo upload error before saving');
+            return;
+        }
         const { sameAsPhone: _, ...cleanData } = data;
+        cleanData.photoUrl = photoUrl || null;
         setIsSubmitting(true);
         try {
             await onSubmit(cleanData);
             reset();
+            setPhotoUrl(null);
             toast.success(editingEmployee ? 'Employee updated' : 'Employee added');
         } catch (err) {
             toast.error('Failed to save. Please try again.');
@@ -127,6 +163,61 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
             </h3>
 
             <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4" noValidate>
+
+                {/* ── Employee Photo ── */}
+                <div className="w-full">
+                    <label className="block text-xs font-bold uppercase mb-1 text-gray-700 flex items-center gap-1">
+                        <Camera size={11} />
+                        Employee Photo
+                    </label>
+                    <div className="flex items-center gap-3">
+                        {/* Preview */}
+                        <div
+                            className={`border-2 border-black bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 ${uploading ? 'animate-pulse' : ''}`}
+                            style={{ width: 64, height: 64 }}
+                        >
+                            {photoUrl ? (
+                                <img src={photoUrl} alt="Photo" className="w-full h-full object-cover" />
+                            ) : uploading ? (
+                                <Loader size={20} className="text-gray-400 animate-spin" />
+                            ) : (
+                                <Camera size={20} className="text-gray-400" />
+                            )}
+                        </div>
+                        {/* Controls */}
+                        <div className="flex flex-col gap-1 flex-1">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={handlePhotoSelect}
+                                className="hidden"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={uploading || isSubmitting}
+                                className="text-xs font-bold uppercase px-3 py-1.5 border-2 border-black bg-blue-500 text-white shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
+                            >
+                                {photoUrl ? 'Replace' : 'Upload'}
+                            </button>
+                            {photoUrl && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setPhotoUrl(null); setUploadError(null); }}
+                                    disabled={uploading || isSubmitting}
+                                    className="text-xs font-bold uppercase px-3 py-1 text-red-600 hover:underline"
+                                >
+                                    Remove
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    {uploadError && (
+                        <p className="text-xs text-red-600 font-bold mt-1">{uploadError}</p>
+                    )}
+                    <p className="text-[10px] text-gray-400 mt-1">JPEG, PNG, WebP · Max 2MB · Auto-cropped to square</p>
+                </div>
 
                 {/* ── Employee ID ── */}
                 <div className="w-full">

@@ -13,12 +13,14 @@ import React, { createContext, useState, useEffect, useCallback, useContext, use
 import { AuthContext } from './AuthContext';
 import { employeeService, teamService, vehicleService, configService } from '../services/firebaseService';
 import { logActivity, AUDIT_ACTIONS } from '../services/auditService';
+import { requirePermission } from '../utils/rbac';
 
 export const RosterContext = createContext(null);
 
 export const RosterProvider = ({ children }) => {
     const auth = useContext(AuthContext);
     const adminEmail = auth?.user?.email || 'unknown';
+    const role = auth?.role || 'public';
 
     // ─── State ────────────────────────────────────────────────
     const [employees, setEmployees] = useState([]);
@@ -85,12 +87,14 @@ export const RosterProvider = ({ children }) => {
 
     // ─── Employee actions ─────────────────────────────────────
     const addEmployee = useCallback(async (userData) => {
+        requirePermission(role, 'employees:write');
         return employeeService.add(userData, adminEmail);
-    }, [adminEmail]);
+    }, [role, adminEmail]);
 
     const updateEmployee = useCallback(async (id, updates) => {
+        requirePermission(role, 'employees:write');
         return employeeService.update(id, updates, adminEmail);
-    }, [adminEmail]);
+    }, [role, adminEmail]);
 
     /**
      * Soft delete — sets isDeleted=true.
@@ -99,39 +103,47 @@ export const RosterProvider = ({ children }) => {
      * @param {string} employeeId  Human-readable ID for audit log
      */
     const deleteEmployee = useCallback(async (id, employeeId) => {
+        requirePermission(role, 'employees:write');
         return employeeService.softDelete(id, employeeId, adminEmail);
-    }, [adminEmail]);
+    }, [role, adminEmail]);
 
     const toggleLeave = useCallback(async (id, currentStatus, employeeId) => {
+        requirePermission(role, 'employees:write');
         return employeeService.toggleLeave(id, currentStatus, employeeId, adminEmail);
-    }, [adminEmail]);
+    }, [role, adminEmail]);
 
     // ─── Team actions ─────────────────────────────────────────
     const addTeam = useCallback(async (teamData) => {
+        requirePermission(role, 'teams:write');
         return teamService.add(teamData, adminEmail);
-    }, [adminEmail]);
+    }, [role, adminEmail]);
 
     const updateTeam = useCallback(async (id, updates) => {
+        requirePermission(role, 'teams:write');
         return teamService.update(id, updates, adminEmail);
-    }, [adminEmail]);
+    }, [role, adminEmail]);
 
     const deleteTeam = useCallback(async (id) => {
+        requirePermission(role, 'teams:write');
         return teamService.remove(id, adminEmail);
-    }, [adminEmail]);
+    }, [role, adminEmail]);
 
     // ─── Vehicle actions ──────────────────────────────────────
     const addVehicle = useCallback(async (vehicleData) => {
+        requirePermission(role, 'vehicles:write');
         return vehicleService.add(vehicleData, adminEmail);
-    }, [adminEmail]);
+    }, [role, adminEmail]);
 
     const deleteVehicle = useCallback(async (id) => {
+        requirePermission(role, 'vehicles:write');
         return vehicleService.remove(id, adminEmail);
-    }, [adminEmail]);
+    }, [role, adminEmail]);
 
     // ─── Config action ────────────────────────────────────────
     const saveConfig = useCallback(async (updates) => {
+        requirePermission(role, 'config:write');
         return configService.save(updates);
-    }, []);
+    }, [role]);
 
     // ─── Context value (memoized to reduce consumer re-renders) ──
     const value = useMemo(() => ({

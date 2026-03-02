@@ -36,6 +36,7 @@ const EMPLOYEE_ALLOWED_FIELDS = [
     'employeeId', 'name', 'fatherName', 'designation', 'roleType',
     'phone', 'whatsapp', 'cnic', 'licenseNo', 'onLeave', 'availability',
     'isDeleted', 'createdAt', 'updatedAt', 'deletedAt',
+    'photoUrl',
 ];
 
 /** Fields explicitly allowed for the public dashboard */
@@ -458,5 +459,38 @@ export const auditLogService = {
             console.error('[AuditLogService.subscribe]', err);
             if (onError) onError(err);
         });
+    },
+};
+
+// ─── Authority Service ─────────────────────────────────────────────
+
+export const authorityService = {
+    /** Subscribe to systemConfig/authority document */
+    subscribe(onData, onError) {
+        return onSnapshot(doc(db, 'systemConfig', 'authority'), (snap) => {
+            if (snap.exists()) {
+                onData(snap.data());
+            } else {
+                onData({ authorityName: '', signatureUrl: '' });
+            }
+        }, (err) => {
+            console.error('[AuthorityService.subscribe]', err);
+            if (onError) onError(err);
+        });
+    },
+
+    /** Save authority config — SUPER_ADMIN only */
+    async save(data, uid) {
+        try {
+            await setDoc(doc(db, 'systemConfig', 'authority'), {
+                authorityName: data.authorityName || '',
+                signatureUrl: data.signatureUrl || '',
+                updatedAt: serverTimestamp(),
+                updatedBy: uid,
+            });
+        } catch (err) {
+            console.error('[AuthorityService.save]', err);
+            throw err;
+        }
     },
 };

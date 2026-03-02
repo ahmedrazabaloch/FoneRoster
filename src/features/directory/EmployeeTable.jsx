@@ -1,12 +1,15 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
     Search, Edit, Trash2, User, Phone, MessageCircle,
-    ChevronLeft, ChevronRight, SlidersHorizontal
+    ChevronLeft, ChevronRight, SlidersHorizontal, CreditCard
 } from 'lucide-react';
 import { Badge } from '../../components/ui';
 import { EmployeeCardMobile } from './EmployeeCardMobile';
 import { EmployeeCardSkeleton } from './EmployeeCardSkeleton';
+import { IdCardPreviewModal } from '../idcard/IdCardPreviewModal';
 import { useWindowWidth } from '../../hooks/useWindowWidth';
+import { useAuth } from '../../hooks/useAuth';
+import { hasPermission } from '../../utils/rbac';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -24,6 +27,9 @@ export const EmployeeTable = ({ employees, onEdit, onDelete, onUpdate, onToggleL
     const debounceRef = useRef(null);
     const windowWidth = useWindowWidth();
     const isMobile = windowWidth <= 768;
+    const { role } = useAuth();
+    const canGenerateIdCard = hasPermission(role, 'employees:write');
+    const [idCardEmployee, setIdCardEmployee] = useState(null);
 
     /* ── Debounce search (300ms) ── */
     const handleSearch = useCallback((value) => {
@@ -157,6 +163,7 @@ export const EmployeeTable = ({ employees, onEdit, onDelete, onUpdate, onToggleL
                                     onDelete={onDelete}
                                     onUpdate={onUpdate}
                                     onToggleLeave={onToggleLeave}
+                                    onIdCard={canGenerateIdCard ? () => setIdCardEmployee(emp) : null}
                                 />
                             </div>
                         ))
@@ -245,6 +252,15 @@ export const EmployeeTable = ({ employees, onEdit, onDelete, onUpdate, onToggleL
                                             >
                                                 <Trash2 size={16} />
                                             </button>
+                                            {canGenerateIdCard && (
+                                                <button
+                                                    onClick={() => setIdCardEmployee(emp)}
+                                                    className="p-2 bg-blue-500 text-white border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
+                                                    title="Generate ID Card"
+                                                >
+                                                    <CreditCard size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -288,6 +304,14 @@ export const EmployeeTable = ({ employees, onEdit, onDelete, onUpdate, onToggleL
                         </button>
                     </div>
                 </div>
+            )}
+
+            {/* ── ID CARD PREVIEW MODAL ─── */}
+            {idCardEmployee && (
+                <IdCardPreviewModal
+                    employee={idCardEmployee}
+                    onClose={() => setIdCardEmployee(null)}
+                />
             )}
         </div>
     );

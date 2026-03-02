@@ -1,8 +1,10 @@
 /**
- * AuthContext.jsx — Extended with RBAC role resolution
+ * AuthContext.jsx — Extended with RBAC role resolution (Phase 2)
  *
  * Role is loaded from Firebase custom claims on login/auth state change.
  * Available via: const { role } = useContext(AuthContext);
+ *
+ * Roles: SUPER_ADMIN | ADMIN | TEAM_USER | PUBLIC
  */
 import React, { createContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -13,7 +15,7 @@ export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [role, setRole] = useState(ROLES.VIEWER);
+    const [role, setRole] = useState(ROLES.PUBLIC);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -23,7 +25,7 @@ export const AuthProvider = ({ children }) => {
                 const resolvedRole = await getUserRole(firebaseUser);
                 setRole(resolvedRole);
             } else {
-                setRole(ROLES.VIEWER);
+                setRole(ROLES.PUBLIC);
             }
             setLoading(false);
         });
@@ -52,7 +54,7 @@ export const AuthProvider = ({ children }) => {
 
     const value = {
         user,
-        role,       // one of ROLES.VIEWER | ROLES.ADMIN | ROLES.SUPERADMIN
+        role,       // one of ROLES.PUBLIC | ROLES.TEAM_USER | ROLES.ADMIN | ROLES.SUPER_ADMIN
         loading,
         login,
         logout,
@@ -60,3 +62,4 @@ export const AuthProvider = ({ children }) => {
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
