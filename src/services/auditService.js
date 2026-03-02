@@ -16,6 +16,7 @@ export const AUDIT_ACTIONS = Object.freeze({
     EDIT_TEAM: 'EDIT_TEAM',
     DELETE_TEAM: 'DELETE_TEAM',
     CHANGE_TEAM: 'CHANGE_TEAM',
+    EXPORT_CSV: 'EXPORT_CSV',
 });
 
 /**

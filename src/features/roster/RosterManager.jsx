@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Briefcase } from 'lucide-react';
+import { Briefcase, Download } from 'lucide-react';
 import { Card, Button } from '../../components/ui';
 import { FieldTeamConfig } from './FieldTeamConfig';
 import { HotlineConfig } from './HotlineConfig';
 import { DirectoryManager } from '../directory/DirectoryManager';
+import { ExportPanel } from '../exports/ExportPanel';
 
 export const RosterManager = () => {
     const [activeView, setActiveView] = useState('field');
@@ -38,11 +39,20 @@ export const RosterManager = () => {
                     <span className="hidden sm:inline">Team Directory</span>
                     <span className="sm:hidden">Directory</span>
                 </Button>
+                <Button
+                    onClick={() => setActiveView('exports')}
+                    variant={activeView === 'exports' ? 'secondary' : 'ghost'}
+                    className="flex items-center space-x-2 text-xs md:text-sm min-h-[44px]"
+                >
+                    <Download size={16} />
+                    <span>Exports</span>
+                </Button>
             </div>
 
             {activeView === 'field' && <FieldTeamConfig />}
             {activeView === 'hotline' && <HotlineConfig />}
             {activeView === 'directory' && <DirectoryManager />}
+            {activeView === 'exports' && <ExportPanel />}
         </div>
     );
 };
