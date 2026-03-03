@@ -35,7 +35,7 @@ import { logActivity, AUDIT_ACTIONS } from './auditService';
 const EMPLOYEE_ALLOWED_FIELDS = [
     'employeeId', 'name', 'fatherName', 'designation', 'roleType',
     'phone', 'whatsapp', 'cnic', 'licenseNo', 'onLeave', 'availability',
-    'isDeleted', 'createdAt', 'updatedAt', 'deletedAt',
+    'isDeleted', 'createdAt', 'updatedAt', 'deletedAt', 'deletedBy',
     'photoUrl',
 ];
 
@@ -116,7 +116,6 @@ export const employeeService = {
     /**
      * Subscribe to active employees (isDeleted == false).
      * Simple single-field where — no composite index required.
-     * Client-side table handles search/filtering, so DB-level sort is not needed.
      */
     subscribe(onData, onError) {
         const q = query(
@@ -124,10 +123,23 @@ export const employeeService = {
             where('isDeleted', '==', false)
         );
         return onSnapshot(q, (snap) => {
-            console.log('[EmployeeService.subscribe] docs:', snap.size);
             onData(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         }, (err) => {
             console.error('[EmployeeService.subscribe]', err);
+            if (onError) onError(err);
+        });
+    },
+
+    /**
+     * Subscribe to ALL employees (active + soft-deleted).
+     * Used by admin "Show Inactive" toggle.
+     */
+    subscribeAll(onData, onError) {
+        const q = query(collection(db, 'employees'));
+        return onSnapshot(q, (snap) => {
+            onData(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        }, (err) => {
+            console.error('[EmployeeService.subscribeAll]', err);
             if (onError) onError(err);
         });
     },
@@ -235,11 +247,47 @@ export const employeeService = {
             batch.update(doc(db, 'employees', docId), {
                 isDeleted: true,
                 deletedAt: serverTimestamp(),
+                deletedBy: adminEmail || 'unknown',
             });
             batch.delete(doc(db, 'publicEmployees', docId));
             await batch.commit();
         } catch (err) {
             console.error('[EmployeeService.softDelete]', err);
+            throw err;
+        }
+    },
+
+    /**
+     * Restore a soft-deleted employee.
+     * Sets isDeleted=false, clears deletedAt/deletedBy, re-creates public mirror.
+     */
+    async restore(docId, adminEmail) {
+        try {
+            const snap = await getDoc(doc(db, 'employees', docId));
+            if (!snap.exists()) throw new Error(`Employee ${docId} not found`);
+            const data = snap.data();
+
+            const batch = writeBatch(db);
+            batch.update(doc(db, 'employees', docId), {
+                isDeleted: false,
+                deletedAt: null,
+                deletedBy: null,
+                updatedAt: serverTimestamp(),
+            });
+            // Re-create public mirror
+            batch.set(doc(db, 'publicEmployees', docId), sanitizeForPublic(data));
+            await batch.commit();
+
+            logActivity({
+                adminEmail,
+                action: AUDIT_ACTIONS.RESTORE_MEMBER,
+                memberId: docId,
+                employeeId: data.employeeId || null,
+                changes: { restored: true },
+                clientMeta: getClientMeta(),
+            });
+        } catch (err) {
+            console.error('[EmployeeService.restore]', err);
             throw err;
         }
     },

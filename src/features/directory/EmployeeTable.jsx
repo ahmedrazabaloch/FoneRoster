@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
     Search, Edit, Trash2, User, Phone, MessageCircle,
-    ChevronLeft, ChevronRight, SlidersHorizontal, CreditCard
+    ChevronLeft, ChevronRight, SlidersHorizontal, CreditCard, RotateCcw
 } from 'lucide-react';
 import { Badge } from '../../components/ui';
 import { EmployeeCardMobile } from './EmployeeCardMobile';
@@ -20,7 +20,7 @@ const FADE_IN_STYLE = `
   to   { opacity: 1; transform: translateY(0); }
 }`;
 
-export const EmployeeTable = ({ employees, onEdit, onDelete, onUpdate, onToggleLeave, loading }) => {
+export const EmployeeTable = ({ employees, onEdit, onDelete, onRestore, onUpdate, onToggleLeave, loading }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -159,11 +159,12 @@ export const EmployeeTable = ({ employees, onEdit, onDelete, onUpdate, onToggleL
                             >
                                 <EmployeeCardMobile
                                     emp={emp}
-                                    onEdit={onEdit}
-                                    onDelete={onDelete}
+                                    onEdit={emp.isDeleted ? null : onEdit}
+                                    onDelete={emp.isDeleted ? null : onDelete}
+                                    onRestore={emp.isDeleted && onRestore ? () => onRestore(emp.id, emp.employeeId) : null}
                                     onUpdate={onUpdate}
-                                    onToggleLeave={onToggleLeave}
-                                    onIdCard={canGenerateIdCard ? () => setIdCardEmployee(emp) : null}
+                                    onToggleLeave={emp.isDeleted ? null : onToggleLeave}
+                                    onIdCard={canGenerateIdCard && !emp.isDeleted ? () => setIdCardEmployee(emp) : null}
                                 />
                             </div>
                         ))
@@ -184,87 +185,106 @@ export const EmployeeTable = ({ employees, onEdit, onDelete, onUpdate, onToggleL
                             </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-black text-sm font-bold">
-                            {currentEmployees.map(emp => (
-                                <tr key={emp.id} className="hover:bg-blue-50 transition-colors">
-                                    <td className="p-4 border-r-2 border-black font-mono">{emp.employeeId || '—'}</td>
-                                    <td className="p-4 border-r-2 border-black text-center">
-                                        <div className="w-10 h-10 rounded-full bg-gray-200 border-2 border-black overflow-hidden flex items-center justify-center mx-auto">
-                                            {emp.photo
-                                                ? <img src={emp.photo} alt="Emp" className="w-full h-full object-cover" />
-                                                : <User size={20} className="text-gray-400" />
-                                            }
-                                        </div>
-                                    </td>
-                                    <td className="p-4 border-r-2 border-black">
-                                        <div className="font-black uppercase">{emp.name}</div>
-                                        <div className="text-[10px] text-gray-500 uppercase mb-1">
-                                            S/O {emp.fatherName || '-'}
-                                        </div>
-                                        <Badge variant="default">{(emp.designation || 'unknown').replace(/_/g, ' ')}</Badge>
-                                        {emp.licenseNo && emp.licenseNo !== 'N/A' && (
-                                            <div className="text-[10px] font-mono mt-1 text-gray-600">
-                                                Lic: {emp.licenseNo}
+                            {currentEmployees.map(emp => {
+                                const isInactive = emp.isDeleted === true;
+                                return (
+                                    <tr key={emp.id} className={`transition-colors ${isInactive ? 'bg-red-50 opacity-60' : 'hover:bg-blue-50'}`}>
+
+                                        <td className="p-4 border-r-2 border-black font-mono">{emp.employeeId || '—'}</td>
+                                        <td className="p-4 border-r-2 border-black text-center">
+                                            <div className="w-10 h-10 rounded-full bg-gray-200 border-2 border-black overflow-hidden flex items-center justify-center mx-auto">
+                                                {emp.photo
+                                                    ? <img src={emp.photo} alt="Emp" className="w-full h-full object-cover" />
+                                                    : <User size={20} className="text-gray-400" />
+                                                }
                                             </div>
-                                        )}
-                                    </td>
-                                    <td className="p-4 border-r-2 border-black font-mono text-xs">
-                                        {emp.phone === emp.whatsapp ? (
-                                            <div className="flex items-center space-x-2 bg-gray-100 p-1.5 rounded border border-gray-300">
-                                                <div className="flex space-x-1">
-                                                    <Phone size={12} className="text-blue-600" />
-                                                    <MessageCircle size={12} className="text-green-600" />
-                                                </div>
-                                                <span>{emp.phone}</span>
+                                        </td>
+                                        <td className="p-4 border-r-2 border-black">
+                                            <div className="font-black uppercase">{emp.name}</div>
+                                            <div className="text-[10px] text-gray-500 uppercase mb-1">
+                                                S/O {emp.fatherName || '-'}
                                             </div>
-                                        ) : (
-                                            <div className="space-y-1">
-                                                <div className="flex items-center">
-                                                    <Phone size={12} className="mr-1 text-blue-600" />
-                                                    {emp.phone}
+                                            <Badge variant="default">{(emp.designation || 'unknown').replace(/_/g, ' ')}</Badge>
+                                            {emp.licenseNo && emp.licenseNo !== 'N/A' && (
+                                                <div className="text-[10px] font-mono mt-1 text-gray-600">
+                                                    Lic: {emp.licenseNo}
                                                 </div>
-                                                <div className="flex items-center text-green-600">
-                                                    <MessageCircle size={12} className="mr-1" />
-                                                    {emp.whatsapp}
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div className="text-[10px] text-gray-400 mt-1">CNIC: {emp.cnic}</div>
-                                    </td>
-                                    <td className="p-4 border-r-2 border-black">
-                                        {emp.onLeave
-                                            ? <Badge variant="danger">On Leave</Badge>
-                                            : <Badge variant="success">Active</Badge>
-                                        }
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex space-x-2">
-                                            <button
-                                                onClick={() => onEdit(emp)}
-                                                className="p-2 bg-yellow-300 border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
-                                                title="Edit"
-                                            >
-                                                <Edit size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => onDelete(emp.id)}
-                                                className="p-2 bg-red-500 text-white border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
-                                                title="Delete"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                            {canGenerateIdCard && (
-                                                <button
-                                                    onClick={() => setIdCardEmployee(emp)}
-                                                    className="p-2 bg-blue-500 text-white border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
-                                                    title="Generate ID Card"
-                                                >
-                                                    <CreditCard size={16} />
-                                                </button>
                                             )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td className="p-4 border-r-2 border-black font-mono text-xs">
+                                            {emp.phone === emp.whatsapp ? (
+                                                <div className="flex items-center space-x-2 bg-gray-100 p-1.5 rounded border border-gray-300">
+                                                    <div className="flex space-x-1">
+                                                        <Phone size={12} className="text-blue-600" />
+                                                        <MessageCircle size={12} className="text-green-600" />
+                                                    </div>
+                                                    <span>{emp.phone}</span>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center">
+                                                        <Phone size={12} className="mr-1 text-blue-600" />
+                                                        {emp.phone}
+                                                    </div>
+                                                    <div className="flex items-center text-green-600">
+                                                        <MessageCircle size={12} className="mr-1" />
+                                                        {emp.whatsapp}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className="text-[10px] text-gray-400 mt-1">CNIC: {emp.cnic}</div>
+                                        </td>
+                                        <td className="p-4 border-r-2 border-black">
+                                            {isInactive ? (
+                                                <Badge variant="danger">Deleted</Badge>
+                                            ) : emp.onLeave ? (
+                                                <Badge variant="danger">On Leave</Badge>
+                                            ) : (
+                                                <Badge variant="success">Active</Badge>
+                                            )}
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex space-x-2">
+                                                {isInactive && onRestore ? (
+                                                    <button
+                                                        onClick={() => onRestore(emp.id, emp.employeeId)}
+                                                        className="p-2 bg-green-500 text-white border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
+                                                        title="Restore Employee"
+                                                    >
+                                                        <RotateCcw size={16} />
+                                                    </button>
+                                                ) : !isInactive ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => onEdit(emp)}
+                                                            className="p-2 bg-yellow-300 border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
+                                                            title="Edit"
+                                                        >
+                                                            <Edit size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => onDelete(emp.id)}
+                                                            className="p-2 bg-red-500 text-white border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
+                                                            title="Delete"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                        {canGenerateIdCard && (
+                                                            <button
+                                                                onClick={() => setIdCardEmployee(emp)}
+                                                                className="p-2 bg-blue-500 text-white border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
+                                                                title="Generate ID Card"
+                                                            >
+                                                                <CreditCard size={16} />
+                                                            </button>
+                                                        )}
+                                                    </>
+                                                ) : null}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             {currentEmployees.length === 0 && (
                                 <tr>
                                     <td colSpan="6" className="p-8 text-center text-gray-500 italic">

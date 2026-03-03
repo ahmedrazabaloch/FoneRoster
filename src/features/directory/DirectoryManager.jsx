@@ -1,23 +1,24 @@
 import React, { useState, useCallback, useContext, useEffect, useRef } from 'react';
-import { Plus, ChevronDown } from 'lucide-react';
+import { Plus, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { EmployeeForm } from './EmployeeForm';
 import { EmployeeTable } from './EmployeeTable';
 import { RosterContext } from '../../context/RosterContext';
 import { useWindowWidth } from '../../hooks/useWindowWidth';
 import { useAdminEmployees } from '../../hooks/useAdminEmployees';
+import { toast } from 'sonner';
 
 export const DirectoryManager = () => {
-    const { addEmployee, updateEmployee, deleteEmployee, toggleLeave } = useContext(RosterContext);
-    const { adminEmployees: employees, loading } = useAdminEmployees();
+    const { addEmployee, updateEmployee, deleteEmployee, restoreEmployee, toggleLeave, teams } = useContext(RosterContext);
+    const [showInactive, setShowInactive] = useState(false);
+    const { adminEmployees: employees, loading } = useAdminEmployees(showInactive);
 
     const [editingEmployee, setEditingEmployee] = useState(null);
     const [formOpen, setFormOpen] = useState(false);
-    const submittingRef = useRef(false); // double-submit guard
+    const submittingRef = useRef(false);
 
     const windowWidth = useWindowWidth();
     const isMobile = windowWidth <= 768;
 
-    // Auto-expand form on mobile when an employee is selected for editing
     useEffect(() => {
         if (isMobile && editingEmployee) {
             setFormOpen(true);
@@ -47,12 +48,37 @@ export const DirectoryManager = () => {
 
     const handleDelete = useCallback(async (id, employeeId) => {
         if (submittingRef.current) return;
-        if (window.confirm('Are you sure? This will remove them from all current duties.')) {
+
+        // Guard: block delete if employee is assigned to any team
+        const assignedTeams = teams.filter(t => {
+            const a = t.assignments || {};
+            return a.Driver === id || a.Supervisor === id || a.Helper === id;
+        });
+        if (assignedTeams.length > 0) {
+            const names = assignedTeams.map(t => t.name || 'Unnamed').join(', ');
+            toast.error(`Cannot delete: assigned to team(s) — ${names}. Remove from team first.`);
+            return;
+        }
+
+        if (window.confirm('Are you sure? This will soft-delete the employee (recoverable).')) {
             submittingRef.current = true;
             try { await deleteEmployee(id, employeeId); }
             finally { submittingRef.current = false; }
         }
-    }, [deleteEmployee]);
+    }, [deleteEmployee, teams]);
+
+    const handleRestore = useCallback(async (id, employeeId) => {
+        if (submittingRef.current) return;
+        submittingRef.current = true;
+        try {
+            await restoreEmployee(id);
+            toast.success(`Restored ${employeeId || 'employee'}`);
+        } catch {
+            toast.error('Restore failed');
+        } finally {
+            submittingRef.current = false;
+        }
+    }, [restoreEmployee]);
 
     const handleCancel = useCallback(() => {
         setEditingEmployee(null);
@@ -67,7 +93,6 @@ export const DirectoryManager = () => {
             <div className="w-full lg:w-1/3">
                 {isMobile ? (
                     <div>
-                        {/* Collapsible toggle button */}
                         <button
                             onClick={toggleForm}
                             style={{
@@ -85,7 +110,6 @@ export const DirectoryManager = () => {
                                 letterSpacing: '0.04em',
                                 cursor: 'pointer',
                                 transition: 'box-shadow 200ms ease',
-                                marginBottom: formOpen ? 0 : 0,
                             }}
                         >
                             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -109,7 +133,6 @@ export const DirectoryManager = () => {
                             />
                         </button>
 
-                        {/* Collapsible form body */}
                         <div style={{
                             overflow: 'hidden',
                             maxHeight: formOpen ? '2000px' : 0,
@@ -128,7 +151,6 @@ export const DirectoryManager = () => {
                         </div>
                     </div>
                 ) : (
-                    /* Desktop: always visible, unchanged */
                     <EmployeeForm
                         onSubmit={handleSubmit}
                         editingEmployee={editingEmployee}
@@ -139,10 +161,25 @@ export const DirectoryManager = () => {
 
             {/* ── TABLE COLUMN ──────────────────────────────────── */}
             <div className="w-full lg:w-2/3">
+                {/* Show Inactive Toggle */}
+                <div className="flex items-center justify-end mb-2">
+                    <button
+                        onClick={() => setShowInactive(v => !v)}
+                        className={`flex items-center gap-2 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider border-2 border-black transition-all ${showInactive
+                            ? 'bg-yellow-400 text-black shadow-brutal-sm'
+                            : 'bg-white text-gray-500 hover:bg-gray-50'
+                            }`}
+                    >
+                        {showInactive ? <EyeOff size={13} /> : <Eye size={13} />}
+                        {showInactive ? 'Hide Inactive' : 'Show Inactive'}
+                    </button>
+                </div>
+
                 <EmployeeTable
                     employees={employees}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    onRestore={showInactive ? handleRestore : null}
                     onUpdate={updateEmployee}
                     onToggleLeave={toggleLeave}
                     loading={loading}

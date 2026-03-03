@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Briefcase, Download } from 'lucide-react';
+import { Briefcase, Download, Shield } from 'lucide-react';
 import { Card, Button } from '../../components/ui';
 import { FieldTeamConfig } from './FieldTeamConfig';
 import { HotlineConfig } from './HotlineConfig';
 import { DirectoryManager } from '../directory/DirectoryManager';
 import { ExportPanel } from '../exports/ExportPanel';
+import { AuditLogViewer } from '../audit/AuditLogViewer';
 
 export const RosterManager = () => {
     const [activeView, setActiveView] = useState('field');
@@ -47,12 +48,22 @@ export const RosterManager = () => {
                     <Download size={16} />
                     <span>Exports</span>
                 </Button>
+                <Button
+                    onClick={() => setActiveView('audit')}
+                    variant={activeView === 'audit' ? 'secondary' : 'ghost'}
+                    className="flex items-center space-x-2 text-xs md:text-sm min-h-[44px]"
+                >
+                    <Shield size={16} />
+                    <span className="hidden sm:inline">Audit Logs</span>
+                    <span className="sm:hidden">Audit</span>
+                </Button>
             </div>
 
             {activeView === 'field' && <FieldTeamConfig />}
             {activeView === 'hotline' && <HotlineConfig />}
             {activeView === 'directory' && <DirectoryManager />}
             {activeView === 'exports' && <ExportPanel />}
+            {activeView === 'audit' && <AuditLogViewer />}
         </div>
     );
 };

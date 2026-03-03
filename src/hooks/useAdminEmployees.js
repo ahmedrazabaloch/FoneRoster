@@ -2,16 +2,22 @@ import { useState, useEffect } from 'react';
 import { employeeService } from '../services/firebaseService';
 
 /**
- * Hook to fetch the full (private) employee records from the 'employees' collection.
- * This is meant exclusively for the Admin panel.
- * Protected by Firestore rules (requires admin/superadmin role).
+ * Hook to fetch employee records for the Admin panel.
+ * Supports toggling between active-only and all (including soft-deleted).
+ *
+ * @param {boolean} showInactive - If true, fetch all employees; otherwise only active.
  */
-export function useAdminEmployees() {
+export function useAdminEmployees(showInactive = false) {
     const [adminEmployees, setAdminEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsub = employeeService.subscribe(
+        setLoading(true);
+        const subscribeFn = showInactive
+            ? employeeService.subscribeAll
+            : employeeService.subscribe;
+
+        const unsub = subscribeFn(
             (data) => {
                 setAdminEmployees(data);
                 setLoading(false);
@@ -22,7 +28,7 @@ export function useAdminEmployees() {
             }
         );
         return unsub;
-    }, []);
+    }, [showInactive]);
 
     return { adminEmployees, loading };
 }

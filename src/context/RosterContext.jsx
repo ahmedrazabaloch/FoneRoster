@@ -107,6 +107,11 @@ export const RosterProvider = ({ children }) => {
         return employeeService.softDelete(id, employeeId, adminEmail);
     }, [role, adminEmail]);
 
+    const restoreEmployee = useCallback(async (id) => {
+        requirePermission(role, 'employees:write');
+        return employeeService.restore(id, adminEmail);
+    }, [role, adminEmail]);
+
     const toggleLeave = useCallback(async (id, currentStatus, employeeId) => {
         requirePermission(role, 'employees:write');
         return employeeService.toggleLeave(id, currentStatus, employeeId, adminEmail);
@@ -170,6 +175,7 @@ export const RosterProvider = ({ children }) => {
         addEmployee,
         updateEmployee,
         deleteEmployee,
+        restoreEmployee,
         toggleLeave,
         addTeam,
         updateTeam,
@@ -184,7 +190,7 @@ export const RosterProvider = ({ children }) => {
     }), [
         employees, teams, vehicles, vehiclesMap,
         hotlineConfig, hotlineRoster, fieldSupervisorRoster, loading,
-        addEmployee, updateEmployee, deleteEmployee, toggleLeave,
+        addEmployee, updateEmployee, deleteEmployee, restoreEmployee, toggleLeave,
         addTeam, updateTeam, deleteTeam, addVehicle, deleteVehicle,
         saveConfig, adminEmail,
     ]);

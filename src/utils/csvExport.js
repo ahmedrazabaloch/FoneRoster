@@ -31,9 +31,14 @@ function escapeCell(val) {
  */
 function buildTeamRow(team, empMap, vehiclesMap) {
     const assignments = team.assignments || {};
-    const driver = assignments.Driver ? empMap.get(assignments.Driver) : null;
-    const supervisor = assignments.Supervisor ? empMap.get(assignments.Supervisor) : null;
-    const helper = assignments.Helper ? empMap.get(assignments.Helper) : null;
+    // Only include active employees — skip deleted
+    const driverRaw = assignments.Driver ? empMap.get(assignments.Driver) : null;
+    const supervisorRaw = assignments.Supervisor ? empMap.get(assignments.Supervisor) : null;
+    const helperRaw = assignments.Helper ? empMap.get(assignments.Helper) : null;
+
+    const driver = driverRaw?.isDeleted ? null : driverRaw;
+    const supervisor = supervisorRaw?.isDeleted ? null : supervisorRaw;
+    const helper = helperRaw?.isDeleted ? null : helperRaw;
 
     const vehicle = vehiclesMap[team.vehicleId];
     const vehicleNumber = vehicle ? vehicle.number : '';
