@@ -63,15 +63,14 @@ export const NeoTeamCard = React.memo(({ team, vehicleDisplay, driver, superviso
                     </div>
                 </div>
             </div>
-            {/* Mobile: Compact horizontal rows */}
             <div className="md:hidden p-2">
                 <MobilePersonRow label="Driver" icon={User} person={driver} />
                 <MobilePersonRow label="Super" icon={User} person={supervisor} />
-                <MobilePersonRow label="Helper" icon={Users} person={helper} />
+                {helper && <MobilePersonRow label="Helper" icon={Users} person={helper} />}
             </div>
 
-            {/* Desktop: 3-column grid (unchanged) */}
-            <div className="hidden md:grid md:grid-cols-3 md:divide-x-2 divide-black h-full">
+            {/* Desktop: 2 or 3-column grid depending on helper */}
+            <div className={`hidden md:grid ${helper ? 'md:grid-cols-3' : 'md:grid-cols-2'} md:divide-x-2 divide-black h-full`}>
                 {/* Driver Column */}
                 <div className="p-4 flex flex-col">
                     <div className="flex items-center space-x-2 mb-2 text-gray-400">
@@ -110,24 +109,24 @@ export const NeoTeamCard = React.memo(({ team, vehicleDisplay, driver, superviso
                     )}
                 </div>
 
-                {/* Helper Column */}
-                <div className="p-4 flex flex-col">
-                    <div className="flex items-center space-x-2 mb-2 text-gray-400">
-                        <Users size={14} />
-                        <span className="text-xs font-black uppercase tracking-wider">
-                            Helper
-                        </span>
-                    </div>
-                    <p className="font-bold text-base leading-tight mb-2 truncate">
-                        {helper?.name || 'Unassigned'}
-                    </p>
-                    {helper && (
+                {/* Helper Column — only rendered when helper is assigned */}
+                {helper && (
+                    <div className="p-4 flex flex-col">
+                        <div className="flex items-center space-x-2 mb-2 text-gray-400">
+                            <Users size={14} />
+                            <span className="text-xs font-black uppercase tracking-wider">
+                                Helper
+                            </span>
+                        </div>
+                        <p className="font-bold text-base leading-tight mb-2 truncate">
+                            {helper.name}
+                        </p>
                         <div className="space-y-1 mt-auto">
                             <ContactRow value={helper.whatsapp} type="wa" />
                             <ContactRow value={helper.phone} type="ph" />
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* Footer Route */}

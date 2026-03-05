@@ -1,5 +1,5 @@
 import React, { useContext, useState, useMemo } from 'react';
-import { Trash2, Truck, Sun, Moon, ChevronDown, ChevronRight } from 'lucide-react';
+import { Trash2, Truck, Sun, Moon, ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
 import { CollapsibleSection } from '../../components/ui/CollapsibleSection';
 import { RosterContext } from '../../context/RosterContext';
 import { SaveBar } from '../../components/ui/SaveBar';
@@ -45,9 +45,12 @@ export const FieldTeamConfig = () => {
     const activeVehicles = useMemo(() => vehicles.filter(v => v.isActive !== false), [vehicles]);
 
     // Filter by designation for field team roles
-    const drivers = employees.filter(e => e.designation === 'driver');
-    const supervisors = employees.filter(e => e.designation === 'supervisor');
-    const helpers = employees.filter(e => e.designation === 'helper');
+    // Driver: any employee with a license number (independent list)
+    const drivers = employees.filter(e => e.licenseNo);
+    // Vehicle Supervisor: supervisors + any license-holder (drivers can appear in both lists)
+    const supervisors = employees.filter(e => e.designation === 'supervisor' || e.licenseNo);
+    // Helper: helpers + supervisors only (drivers do not appear here)
+    const helpers = employees.filter(e => e.designation === 'helper' || e.designation === 'supervisor');
 
     // Dirty state tracking
     const rosterData = useMemo(() => ({
@@ -77,6 +80,17 @@ export const FieldTeamConfig = () => {
         const team = teams.find(t => t.id === teamId);
         if (!team) return;
         const updatedAssignments = { ...(team.assignments || {}), [role]: empId || '' };
+
+        // Guard: prevent same employee in all 3 roles simultaneously
+        if (empId) {
+            const roles = ['Driver', 'Supervisor', 'Helper'];
+            const filledRoles = roles.filter(r => r !== role && updatedAssignments[r] === empId);
+            if (filledRoles.length >= 2) {
+                toast.error('Same employee cannot be assigned to all three roles.');
+                return;
+            }
+        }
+
         try {
             await updateTeam(teamId, { assignments: updatedAssignments });
         } catch (error) {
@@ -117,6 +131,14 @@ export const FieldTeamConfig = () => {
         const assignedCount = [createForm.driverId, createForm.supervisorId, createForm.helperId].filter(Boolean).length;
         if (assignedCount < 2) {
             setCreateError('Each team must have at least 2 assigned members.');
+            return;
+        }
+
+        // Guard: prevent same employee in all 3 roles simultaneously
+        const assignedIds = [createForm.driverId, createForm.supervisorId, createForm.helperId].filter(Boolean);
+        const uniqueIds = new Set(assignedIds);
+        if (assignedIds.length === 3 && uniqueIds.size === 1) {
+            setCreateError('Same employee cannot be assigned to all three roles.');
             return;
         }
 
@@ -198,6 +220,17 @@ export const FieldTeamConfig = () => {
 
 
 
+    // ─── Conflict detection helper ─────────────────────────
+    // Returns names of OTHER teams that already have this employee assigned.
+    // excludeTeamId: the team currently being edited (ignored in the check).
+    const getConflicts = (empId, excludeTeamId) => {
+        if (!empId) return [];
+        return teams
+            .filter(t => t.id !== excludeTeamId)
+            .filter(t => Object.values(t.assignments || {}).includes(empId))
+            .map(t => t.name || 'Unnamed');
+    };
+
     const renderTeamCard = (team) => {
         const currentVehicleId = team.vehicleId || '';
 
@@ -262,37 +295,92 @@ export const FieldTeamConfig = () => {
 
                 {/* Personnel dropdowns — stacked on mobile, row on desktop */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {/* ── Driver ── */}
                     <select
-                        className="text-xs border-2 border-black p-2 md:p-1 font-bold w-full min-h-[44px] md:min-h-0 bg-white"
+                        className={`text-xs border-2 p-2 md:p-1 font-bold w-full min-h-[44px] md:min-h-0 bg-white ${getConflicts(team.assignments?.Driver, team.id).length > 0
+                                ? 'border-yellow-400'
+                                : 'border-black'
+                            }`}
                         value={team.assignments?.Driver || ''}
                         onChange={e => handleAssignmentChange(team.id, 'Driver', e.target.value)}
                     >
                         <option value="">Driver...</option>
-                        {drivers.map(d => (
-                            <option key={d.id} value={d.id}>{d.name}</option>
-                        ))}
+                        {drivers.map(d => {
+                            const c = getConflicts(d.id, team.id);
+                            return (
+                                <option key={d.id} value={d.id}>
+                                    {c.length > 0 ? `${d.name} ⚠ (${c.join(', ')})` : d.name}
+                                </option>
+                            );
+                        })}
                     </select>
+
+                    {/* ── Supervisor ── */}
                     <select
-                        className="text-xs border-2 border-black p-2 md:p-1 font-bold w-full min-h-[44px] md:min-h-0 bg-white"
+                        className={`text-xs border-2 p-2 md:p-1 font-bold w-full min-h-[44px] md:min-h-0 bg-white ${getConflicts(team.assignments?.Supervisor, team.id).length > 0
+                                ? 'border-yellow-400'
+                                : 'border-black'
+                            }`}
                         value={team.assignments?.Supervisor || ''}
                         onChange={e => handleAssignmentChange(team.id, 'Supervisor', e.target.value)}
                     >
                         <option value="">Supervisor...</option>
-                        {supervisors.map(d => (
-                            <option key={d.id} value={d.id}>{d.name}</option>
-                        ))}
+                        {supervisors.map(d => {
+                            const c = getConflicts(d.id, team.id);
+                            return (
+                                <option key={d.id} value={d.id}>
+                                    {c.length > 0 ? `${d.name} ⚠ (${c.join(', ')})` : d.name}
+                                </option>
+                            );
+                        })}
                     </select>
+
+                    {/* ── Helper ── */}
                     <select
-                        className="text-xs border-2 border-black p-2 md:p-1 font-bold w-full min-h-[44px] md:min-h-0 bg-white"
+                        className={`text-xs border-2 p-2 md:p-1 font-bold w-full min-h-[44px] md:min-h-0 bg-white ${getConflicts(team.assignments?.Helper, team.id).length > 0
+                                ? 'border-yellow-400'
+                                : 'border-black'
+                            }`}
                         value={team.assignments?.Helper || ''}
                         onChange={e => handleAssignmentChange(team.id, 'Helper', e.target.value)}
                     >
-                        <option value="">Helper...</option>
-                        {helpers.map(d => (
-                            <option key={d.id} value={d.id}>{d.name}</option>
-                        ))}
+                        <option value="">(none)</option>
+                        {helpers.map(d => {
+                            const c = getConflicts(d.id, team.id);
+                            return (
+                                <option key={d.id} value={d.id}>
+                                    {c.length > 0 ? `${d.name} ⚠ (${c.join(', ')})` : d.name}
+                                </option>
+                            );
+                        })}
                     </select>
                 </div>
+
+                {/* ── Conflict warning strip ── */}
+                {(() => {
+                    const a = team.assignments || {};
+                    const warns = [
+                        { role: 'Driver', id: a.Driver },
+                        { role: 'Supervisor', id: a.Supervisor },
+                        { role: 'Helper', id: a.Helper },
+                    ]
+                        .map(({ role, id }) => ({ role, conflicts: getConflicts(id, team.id) }))
+                        .filter(w => w.conflicts.length > 0);
+
+                    if (warns.length === 0) return null;
+                    return (
+                        <div className="mt-2 p-2 bg-yellow-50 border-2 border-yellow-400 flex items-start gap-2">
+                            <AlertTriangle size={14} className="text-yellow-600 shrink-0 mt-0.5" />
+                            <div className="text-[10px] font-bold text-yellow-800 uppercase tracking-wide leading-snug">
+                                {warns.map(w => (
+                                    <div key={w.role}>
+                                        {w.role}: also assigned to {w.conflicts.join(', ')}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })()}
             </div>
         );
     };
@@ -375,6 +463,7 @@ export const FieldTeamConfig = () => {
                                     <option value="">Select Driver...</option>
                                     {drivers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                 </select>
+                                <p className="text-[10px] text-gray-400">Includes supervisors eligible as driver</p>
                             </div>
 
                             {/* Supervisor */}
@@ -398,9 +487,10 @@ export const FieldTeamConfig = () => {
                                     value={createForm.helperId}
                                     onChange={e => setCreateForm(prev => ({ ...prev, helperId: e.target.value }))}
                                 >
-                                    <option value="">Select Helper...</option>
+                                    <option value="">(none — optional)</option>
                                     {helpers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                 </select>
+                                <p className="text-[10px] text-gray-400">Includes vehicle supervisors eligible as helper</p>
                             </div>
 
                             {/* Shift Checkboxes */}

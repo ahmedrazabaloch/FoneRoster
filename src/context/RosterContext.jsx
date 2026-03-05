@@ -40,14 +40,14 @@ export const RosterProvider = ({ children }) => {
 
     // ─── Snapshot listeners (all cleaned up in return) ────────
     useEffect(() => {
-        // Employee snapshot (PUBLIC data only)
-        const unsubEmployees = employeeService.subscribePublic(
+        // Employee snapshot (full admin data — includes licenseNo, cnic, employeeId)
+        const unsubEmployees = employeeService.subscribe(
             (data) => {
                 setEmployees(data);
                 setEmployeesLoaded(true);
             },
             (err) => {
-                console.error('[RosterContext] public employeeService error:', err);
+                console.error('[RosterContext] employeeService error:', err);
                 setEmployeesLoaded(true);
             }
         );

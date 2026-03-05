@@ -185,112 +185,145 @@ export const EmployeeTable = ({ employees, onEdit, onDelete, onRestore, onUpdate
                             </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-black text-sm font-bold">
-                            {currentEmployees.map(emp => {
-                                const isInactive = emp.isDeleted === true;
-                                return (
-                                    <tr key={emp.id} className={`transition-colors ${isInactive ? 'bg-red-50 opacity-60' : 'hover:bg-blue-50'}`}>
-
-                                        <td className="p-4 border-r-2 border-black font-mono">{emp.employeeId || '—'}</td>
-                                        <td className="p-4 border-r-2 border-black text-center">
-                                            <div className="w-10 h-10 rounded-full bg-gray-200 border-2 border-black overflow-hidden flex items-center justify-center mx-auto">
-                                                {emp.photo
-                                                    ? <img src={emp.photo} alt="Emp" className="w-full h-full object-cover" />
-                                                    : <User size={20} className="text-gray-400" />
-                                                }
-                                            </div>
+                            {loading ? (
+                                /* Skeleton rows while data loads */
+                                [1, 2, 3, 4, 5].map(i => (
+                                    <tr key={i} className="animate-pulse">
+                                        <td className="p-4 border-r-2 border-black">
+                                            <div className="h-4 bg-gray-200 rounded w-16" />
                                         </td>
                                         <td className="p-4 border-r-2 border-black">
-                                            <div className="font-black uppercase">{emp.name}</div>
-                                            <div className="text-[10px] text-gray-500 uppercase mb-1">
-                                                S/O {emp.fatherName || '-'}
-                                            </div>
-                                            <Badge variant="default">{(emp.designation || 'unknown').replace(/_/g, ' ')}</Badge>
-                                            {emp.licenseNo && emp.licenseNo !== 'N/A' && (
-                                                <div className="text-[10px] font-mono mt-1 text-gray-600">
-                                                    Lic: {emp.licenseNo}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="p-4 border-r-2 border-black font-mono text-xs">
-                                            {emp.phone === emp.whatsapp ? (
-                                                <div className="flex items-center space-x-2 bg-gray-100 p-1.5 rounded border border-gray-300">
-                                                    <div className="flex space-x-1">
-                                                        <Phone size={12} className="text-blue-600" />
-                                                        <MessageCircle size={12} className="text-green-600" />
-                                                    </div>
-                                                    <span>{emp.phone}</span>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center">
-                                                        <Phone size={12} className="mr-1 text-blue-600" />
-                                                        {emp.phone}
-                                                    </div>
-                                                    <div className="flex items-center text-green-600">
-                                                        <MessageCircle size={12} className="mr-1" />
-                                                        {emp.whatsapp}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <div className="text-[10px] text-gray-400 mt-1">CNIC: {emp.cnic}</div>
+                                            <div className="w-10 h-10 rounded-full bg-gray-200 mx-auto" />
                                         </td>
                                         <td className="p-4 border-r-2 border-black">
-                                            {isInactive ? (
-                                                <Badge variant="danger">Deleted</Badge>
-                                            ) : emp.onLeave ? (
-                                                <Badge variant="danger">On Leave</Badge>
-                                            ) : (
-                                                <Badge variant="success">Active</Badge>
-                                            )}
+                                            <div className="h-4 bg-gray-200 rounded w-32 mb-2" />
+                                            <div className="h-3 bg-gray-100 rounded w-20" />
+                                        </td>
+                                        <td className="p-4 border-r-2 border-black">
+                                            <div className="h-3 bg-gray-200 rounded w-28 mb-1" />
+                                            <div className="h-3 bg-gray-200 rounded w-28" />
+                                        </td>
+                                        <td className="p-4 border-r-2 border-black">
+                                            <div className="h-5 bg-gray-200 rounded w-14" />
                                         </td>
                                         <td className="p-4">
                                             <div className="flex space-x-2">
-                                                {isInactive && onRestore ? (
-                                                    <button
-                                                        onClick={() => onRestore(emp.id, emp.employeeId)}
-                                                        className="p-2 bg-green-500 text-white border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
-                                                        title="Restore Employee"
-                                                    >
-                                                        <RotateCcw size={16} />
-                                                    </button>
-                                                ) : !isInactive ? (
-                                                    <>
-                                                        <button
-                                                            onClick={() => onEdit(emp)}
-                                                            className="p-2 bg-yellow-300 border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
-                                                            title="Edit"
-                                                        >
-                                                            <Edit size={16} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => onDelete(emp.id)}
-                                                            className="p-2 bg-red-500 text-white border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
-                                                            title="Delete"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                        {canGenerateIdCard && (
-                                                            <button
-                                                                onClick={() => setIdCardEmployee(emp)}
-                                                                className="p-2 bg-blue-500 text-white border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
-                                                                title="Generate ID Card"
-                                                            >
-                                                                <CreditCard size={16} />
-                                                            </button>
-                                                        )}
-                                                    </>
-                                                ) : null}
+                                                <div className="w-8 h-8 bg-gray-200 rounded" />
+                                                <div className="w-8 h-8 bg-gray-200 rounded" />
                                             </div>
                                         </td>
                                     </tr>
-                                );
-                            })}
-                            {currentEmployees.length === 0 && (
-                                <tr>
-                                    <td colSpan="6" className="p-8 text-center text-gray-500 italic">
-                                        No employees found matching criteria.
-                                    </td>
-                                </tr>
+                                ))
+                            ) : (
+                                <>
+                                    {currentEmployees.map(emp => {
+                                        const isInactive = emp.isDeleted === true;
+                                        return (
+                                            <tr key={emp.id} className={`transition-colors ${isInactive ? 'bg-red-50 opacity-60' : 'hover:bg-blue-50'}`}>
+
+                                                <td className="p-4 border-r-2 border-black font-mono">{emp.employeeId || '—'}</td>
+                                                <td className="p-4 border-r-2 border-black text-center">
+                                                    <div className="w-10 h-10 rounded-full bg-gray-200 border-2 border-black overflow-hidden flex items-center justify-center mx-auto">
+                                                        {emp.photo
+                                                            ? <img src={emp.photo} alt="Emp" className="w-full h-full object-cover" />
+                                                            : <User size={20} className="text-gray-400" />
+                                                        }
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 border-r-2 border-black">
+                                                    <div className="font-black uppercase">{emp.name}</div>
+                                                    <div className="text-[10px] text-gray-500 uppercase mb-1">
+                                                        S/O {emp.fatherName || '-'}
+                                                    </div>
+                                                    <Badge variant="default">{(emp.designation || 'unknown').replace(/_/g, ' ')}</Badge>
+                                                    {emp.licenseNo && emp.licenseNo !== 'N/A' && (
+                                                        <div className="text-[10px] font-mono mt-1 text-gray-600">
+                                                            Lic: {emp.licenseNo}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="p-4 border-r-2 border-black font-mono text-xs">
+                                                    {emp.phone === emp.whatsapp ? (
+                                                        <div className="flex items-center space-x-2 bg-gray-100 p-1.5 rounded border border-gray-300">
+                                                            <div className="flex space-x-1">
+                                                                <Phone size={12} className="text-blue-600" />
+                                                                <MessageCircle size={12} className="text-green-600" />
+                                                            </div>
+                                                            <span>{emp.phone}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center">
+                                                                <Phone size={12} className="mr-1 text-blue-600" />
+                                                                {emp.phone}
+                                                            </div>
+                                                            <div className="flex items-center text-green-600">
+                                                                <MessageCircle size={12} className="mr-1" />
+                                                                {emp.whatsapp}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    <div className="text-[10px] text-gray-400 mt-1">CNIC: {emp.cnic}</div>
+                                                </td>
+                                                <td className="p-4 border-r-2 border-black">
+                                                    {isInactive ? (
+                                                        <Badge variant="danger">Deleted</Badge>
+                                                    ) : emp.onLeave ? (
+                                                        <Badge variant="danger">On Leave</Badge>
+                                                    ) : (
+                                                        <Badge variant="success">Active</Badge>
+                                                    )}
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="flex space-x-2">
+                                                        {isInactive && onRestore ? (
+                                                            <button
+                                                                onClick={() => onRestore(emp.id, emp.employeeId)}
+                                                                className="p-2 bg-green-500 text-white border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
+                                                                title="Restore Employee"
+                                                            >
+                                                                <RotateCcw size={16} />
+                                                            </button>
+                                                        ) : !isInactive ? (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => onEdit(emp)}
+                                                                    className="p-2 bg-yellow-300 border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
+                                                                    title="Edit"
+                                                                >
+                                                                    <Edit size={16} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => onDelete(emp.id)}
+                                                                    className="p-2 bg-red-500 text-white border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
+                                                                    title="Delete"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                                {canGenerateIdCard && (
+                                                                    <button
+                                                                        onClick={() => setIdCardEmployee(emp)}
+                                                                        className="p-2 bg-blue-500 text-white border-2 border-black shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all"
+                                                                        title="Generate ID Card"
+                                                                    >
+                                                                        <CreditCard size={16} />
+                                                                    </button>
+                                                                )}
+                                                            </>
+                                                        ) : null}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    {currentEmployees.length === 0 && (
+                                        <tr>
+                                            <td colSpan="6" className="p-8 text-center text-gray-500 italic">
+                                                No employees found matching criteria.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </>
                             )}
                         </tbody>
                     </table>

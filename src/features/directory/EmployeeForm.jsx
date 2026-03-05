@@ -5,7 +5,7 @@ import { Plus, Save, FileText, Hash, Camera, X, Loader } from 'lucide-react';
 import { toast } from 'sonner';
 import { employeeSchema } from '../../lib/validators';
 import { formatCnic } from '../../utils/formatters';
-import { Input, Select, Button, Card } from '../../components/ui';
+import { Input, Button, Card } from '../../components/ui';
 import { DESIGNATION_OPTIONS, ROLE_TYPE_MAP } from '../../config/designations';
 
 
@@ -14,7 +14,7 @@ const fieldClass =
     'w-full border-2 border-black p-2 font-bold focus:outline-none focus:shadow-brutal-sm bg-gray-50 focus:bg-white transition-all';
 const errorClass = ' border-red-600 bg-red-50';
 
-export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
+export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployeeId }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [photoUrl, setPhotoUrl] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -84,7 +84,7 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
             setPhotoUrl(editingEmployee.photoUrl || null);
         } else {
             reset({
-                employeeId: '',
+                employeeId: nextEmployeeId || '',
                 name: '',
                 fatherName: '',
                 designation: 'driver',
@@ -100,7 +100,7 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
             setPhotoUrl(null);
             setUploadError(null);
         }
-    }, [editingEmployee, reset]);
+    }, [editingEmployee, nextEmployeeId, reset]);
 
     // CNIC auto-format handler
     const handleCnicChange = (e) => {
@@ -296,15 +296,22 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel }) => {
                 </div>
 
                 {/* ── Designation ── */}
-                <Select
-                    label="Designation"
-                    error={errors.designation?.message}
-                    {...register('designation')}
-                >
-                    {DESIGNATION_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                </Select>
+                <div className="w-full">
+                    <label className="block text-xs font-bold uppercase mb-1 text-gray-700">Designation</label>
+                    <select
+                        value={designation}
+                        onChange={e => setValue('designation', e.target.value, { shouldValidate: true })}
+                        style={{ minHeight: 44 }}
+                        className={`${fieldClass}${errors.designation ? errorClass : ''}`}
+                    >
+                        {DESIGNATION_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
+                    {errors.designation && (
+                        <p className="text-xs text-red-600 font-bold mt-1">{errors.designation.message}</p>
+                    )}
+                </div>
 
                 {/* ── CNIC ── full-width, same styling ── */}
                 <div className="w-full">

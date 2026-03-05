@@ -41,6 +41,7 @@ export const DashboardPage = () => {
                         currentOperator={hotlineOperator}
                         shiftName={currentShiftName}
                         onDayShift={!isNightTime}
+                        loading={loading}
                     />
                     <FieldSupervisorCard supervisors={fieldSupervisors} />
                 </div>
@@ -78,11 +79,11 @@ export const DashboardPage = () => {
                                         }
                                     `}
                                 >
-                                    {!isEffectiveNight && (
-                                        <span className="absolute top-[6px] left-1/2 -translate-x-1/2 w-[8px] h-[8px] bg-[#00E676] rounded-none" />
-                                    )}
                                     <Sun size={16} strokeWidth={2.5} />
                                     DAY
+                                    {!isEffectiveNight && (
+                                        <span className="w-[8px] h-[8px] bg-[#00E676] rounded-none inline-block flex-shrink-0" />
+                                    )}
                                 </button>
 
                                 {/* Vertical divider */}
@@ -104,11 +105,11 @@ export const DashboardPage = () => {
                                         }
                                     `}
                                 >
-                                    {isEffectiveNight && (
-                                        <span className="absolute top-[6px] left-1/2 -translate-x-1/2 w-[8px] h-[8px] bg-[#00E676] rounded-none" />
-                                    )}
                                     <Moon size={16} strokeWidth={2.5} />
                                     NIGHT
+                                    {isEffectiveNight && (
+                                        <span className="w-[8px] h-[8px] bg-[#00E676] rounded-none inline-block flex-shrink-0" />
+                                    )}
                                 </button>
                             </div>
 

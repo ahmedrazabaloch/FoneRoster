@@ -3,7 +3,7 @@ import { Phone, MessageCircle, Headset } from 'lucide-react';
 import { LiveClock } from './LiveClock';
 import { formatWhatsAppUrl } from '../../lib/utils';
 
-export const HotlinePanel = ({ currentOperator, shiftName, onDayShift }) => (
+export const HotlinePanel = ({ currentOperator, shiftName, onDayShift, loading }) => (
     <div className="bg-white border-2 md:border-4 border-black shadow-brutal md:shadow-brutal-xl p-4 md:p-8 flex flex-col h-fit">
         <LiveClock />
         <div className="border-t-2 md:border-t-4 border-black my-4 md:my-6"></div>
@@ -13,7 +13,7 @@ export const HotlinePanel = ({ currentOperator, shiftName, onDayShift }) => (
             </span>
             <div className="inline-block bg-yellow-300 px-4 py-1 border-2 border-black shadow-brutal-sm -rotate-1">
                 <span className="block text-base md:text-xl font-black text-red-600 font-mono tracking-tighter">
-                    0313-1234567
+                    0313-2005170
                 </span>
             </div>
         </div>
@@ -24,7 +24,13 @@ export const HotlinePanel = ({ currentOperator, shiftName, onDayShift }) => (
             </span>
         </div>
         <h2 className="text-2xl md:text-5xl font-black text-gray-900 uppercase leading-none mb-3 md:mb-4 break-words">
-            {currentOperator?.name || 'Unassigned'}
+            {loading ? (
+                <div className="space-y-2 mt-1">
+                    <div className="h-8 md:h-14 bg-gray-200 animate-pulse rounded w-3/4" />
+                </div>
+            ) : (
+                currentOperator?.name || 'Unassigned'
+            )}
         </h2>
         <div className="mb-4 md:mb-8">
             <span

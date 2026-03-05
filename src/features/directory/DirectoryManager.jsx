@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useContext, useEffect, useRef, useMemo } from 'react';
 import { Plus, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { EmployeeForm } from './EmployeeForm';
 import { EmployeeTable } from './EmployeeTable';
@@ -11,6 +11,19 @@ export const DirectoryManager = () => {
     const { addEmployee, updateEmployee, deleteEmployee, restoreEmployee, toggleLeave, teams } = useContext(RosterContext);
     const [showInactive, setShowInactive] = useState(false);
     const { adminEmployees: employees, loading } = useAdminEmployees(showInactive);
+
+    // ── Auto-generate next employee code ─────────────────────────────
+    const nextEmployeeId = useMemo(() => {
+        if (!employees || employees.length === 0) return 'EMP-001';
+        const nums = employees
+            .map(e => {
+                const match = (e.employeeId || '').match(/\d+$/);
+                return match ? parseInt(match[0], 10) : 0;
+            })
+            .filter(n => !isNaN(n));
+        const maxNum = nums.length > 0 ? Math.max(...nums) : 0;
+        return `EMP-${String(maxNum + 1).padStart(3, '0')}`;
+    }, [employees]);
 
     const [editingEmployee, setEditingEmployee] = useState(null);
     const [formOpen, setFormOpen] = useState(false);
@@ -146,6 +159,7 @@ export const DirectoryManager = () => {
                                     onSubmit={handleSubmit}
                                     editingEmployee={editingEmployee}
                                     onCancel={handleCancel}
+                                    nextEmployeeId={!editingEmployee ? nextEmployeeId : undefined}
                                 />
                             </div>
                         </div>
@@ -155,6 +169,7 @@ export const DirectoryManager = () => {
                         onSubmit={handleSubmit}
                         editingEmployee={editingEmployee}
                         onCancel={handleCancel}
+                        nextEmployeeId={!editingEmployee ? nextEmployeeId : undefined}
                     />
                 )}
             </div>
