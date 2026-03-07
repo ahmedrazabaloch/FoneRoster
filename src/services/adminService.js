@@ -10,8 +10,10 @@
  */
 import {
     createUserWithEmailAndPassword,
-    updatePassword,
     sendPasswordResetEmail,
+    deleteUser,
+    getAuth,
+    initializeAuth,
 } from 'firebase/auth';
 import {
     collection,
@@ -24,8 +26,24 @@ import {
     query,
     orderBy,
 } from 'firebase/firestore';
+import { initializeApp, getApps } from 'firebase/app';
 import { auth, db } from '../config/firebase';
 import { logActivity, AUDIT_ACTIONS } from './auditService';
+
+/**
+ * Get or create a secondary Firebase app for admin creation.
+ * Using a secondary app prevents createUserWithEmailAndPassword from
+ * signing out the currently logged-in SUPER_ADMIN.
+ */
+function getSecondaryAuth() {
+    const secondaryAppName = 'admin-creator';
+    const existingApp = getApps().find(a => a.name === secondaryAppName);
+    if (existingApp) return getAuth(existingApp);
+    // Re-use same config as primary app
+    const primaryApp = getApps().find(a => a.name === '[DEFAULT]');
+    const secondaryApp = initializeApp(primaryApp.options, secondaryAppName);
+    return getAuth(secondaryApp);
+}
 
 /** Module permission keys */
 export const MODULE_PERMISSIONS = Object.freeze([
@@ -57,9 +75,13 @@ export const adminService = {
      */
     async createAdmin({ name, phone, password, role, permissions }, creatorEmail) {
         const email = phoneToEmail(phone);
-        // Create Firebase Auth account
-        const credential = await createUserWithEmailAndPassword(auth, email, password);
-        const uid = credential.user.uid;
+
+        // Use a secondary auth instance so creating a new user does NOT sign
+        // out the currently logged-in SUPER_ADMIN.
+        const secondaryAuth = getSecondaryAuth();
+        const credential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+        const newUser = credential.user;
+        const uid = newUser.uid;
 
         const profileData = {
             uid,
@@ -73,7 +95,13 @@ export const adminService = {
             updatedAt: serverTimestamp(),
         };
 
-        await setDoc(doc(db, 'admins', uid), profileData);
+        try {
+            await setDoc(doc(db, 'admins', uid), profileData);
+        } catch (firestoreErr) {
+            // Rollback: delete auth user if Firestore write fails
+            try { await deleteUser(newUser); } catch (_) { /* best effort */ }
+            throw firestoreErr;
+        }
 
         logActivity({
             adminEmail: creatorEmail,
@@ -164,7 +192,7 @@ export const adminService = {
      * Used by the User Management panel.
      */
     subscribeAll(onData, onError) {
-        const q = query(collection(db, 'admins'), orderBy('createdAt', 'asc'));
+        const q = query(collection(db, 'admins'), orderBy('createdAt', 'desc'));
         return onSnapshot(q, snap => {
             onData(snap.docs.map(d => ({ uid: d.id, ...d.data() })));
         }, err => {

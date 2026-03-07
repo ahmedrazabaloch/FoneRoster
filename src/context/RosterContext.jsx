@@ -10,7 +10,7 @@
  *  - Loading uses explicit boolean flags (not numeric counters)
  */
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
-import { AuthContext } from './AuthContext';
+import { AuthContext } from '../auth/AuthContext';
 import { employeeService, teamService, vehicleService, configService } from '../services/firebaseService';
 import { logActivity, AUDIT_ACTIONS } from '../services/auditService';
 import { requirePermission } from '../utils/rbac';
@@ -23,7 +23,8 @@ export const RosterProvider = ({ children }) => {
     const role = auth?.role || 'public';
 
     // ─── State ────────────────────────────────────────────────
-    const [employees, setEmployees] = useState([]);
+    const [employees, setEmployees] = useState([]);       // full admin data (auth-gated)
+    const [publicEmployees, setPublicEmployees] = useState([]); // sanitized public view
     const [teams, setTeams] = useState([]);
     const [vehicles, setVehicles] = useState([]);
     const [hotlineConfig, setHotlineConfig] = useState('standard');
@@ -32,39 +33,37 @@ export const RosterProvider = ({ children }) => {
 
     // ─── Explicit loading flags ───────────────────────────────
     const [employeesLoaded, setEmployeesLoaded] = useState(false);
+    const [publicEmployeesLoaded, setPublicEmployeesLoaded] = useState(false);
     const [teamsLoaded, setTeamsLoaded] = useState(false);
     const [vehiclesLoaded, setVehiclesLoaded] = useState(false);
     const [configLoaded, setConfigLoaded] = useState(false);
 
-    const loading = !employeesLoaded || !teamsLoaded || !vehiclesLoaded || !configLoaded;
+    // Dashboard is unblocked as soon as public data is ready.
+    // Admin tools additionally wait for full employee data.
+    const loading = !publicEmployeesLoaded || !teamsLoaded || !vehiclesLoaded || !configLoaded;
 
     // ─── Snapshot listeners (all cleaned up in return) ────────
     useEffect(() => {
-        // Employee snapshot (full admin data — includes licenseNo, cnic, employeeId)
-        const unsubEmployees = employeeService.subscribe(
-            (data) => {
-                setEmployees(data);
-                setEmployeesLoaded(true);
-            },
-            (err) => {
-                console.error('[RosterContext] employeeService error:', err);
-                setEmployeesLoaded(true);
-            }
+        // ── publicEmployees: always subscribed (no auth required) ──
+        // Used by the public dashboard — reads the publicEmployees mirror collection.
+        const unsubPublicEmployees = employeeService.subscribePublic(
+            (data) => { setPublicEmployees(data); setPublicEmployeesLoaded(true); },
+            () => { setPublicEmployeesLoaded(true); }
         );
 
-        // Team snapshot
+        // Team snapshot (public collection)
         const unsubTeams = teamService.subscribe(
             (data) => { setTeams(data); setTeamsLoaded(true); },
             () => { setTeamsLoaded(true); }
         );
 
-        // Vehicle snapshot
+        // Vehicle snapshot (public collection)
         const unsubVehicles = vehicleService.subscribe(
-            (data) => { setVehicles(data); setVehiclesLoaded(true); },
+            (data) => { setVehiclesLoaded(true); setVehicles(data); },
             () => { setVehiclesLoaded(true); }
         );
 
-        // Config snapshot
+        // Config snapshot (public collection)
         const unsubConfig = configService.subscribe(
             (data) => {
                 if (data.hotlineConfig) setHotlineConfig(data.hotlineConfig);
@@ -72,11 +71,26 @@ export const RosterProvider = ({ children }) => {
                 if (data.fieldSupervisorRoster) setFieldSupervisorRoster(data.fieldSupervisorRoster);
                 setConfigLoaded(true);
             },
-            () => { setConfigLoaded(true); }   // doc missing or permission error — still unblock loading
+            () => { setConfigLoaded(true); }
         );
 
-        return () => { unsubEmployees(); unsubTeams(); unsubVehicles(); unsubConfig(); };
-    }, []);
+        return () => { unsubPublicEmployees(); unsubTeams(); unsubVehicles(); unsubConfig(); };
+    }, []); // runs once — public subscriptions never change
+
+    // ── Full employees: only when authenticated as admin+ ──
+    // Admin panels (FieldTeamConfig, DirectoryManager, etc.) need licenseNo, cnic, etc.
+    useEffect(() => {
+        if (role === 'admin' || role === 'superadmin') {
+            const unsub = employeeService.subscribe(
+                (data) => { setEmployees(data); setEmployeesLoaded(true); },
+                () => { setEmployeesLoaded(true); }
+            );
+            return unsub;
+        } else {
+            // Non-admin: mark as loaded immediately (don't wait for auth-gated read)
+            setEmployeesLoaded(true);
+        }
+    }, [role]);
 
     // ─── Vehicles lookup map (O(1) by ID) ─────────────────────
     const vehiclesMap = useMemo(() => {
@@ -152,8 +166,9 @@ export const RosterProvider = ({ children }) => {
 
     // ─── Context value (memoized to reduce consumer re-renders) ──
     const value = useMemo(() => ({
-        employees,
-        users: employees,       // backward-compat alias
+        employees,            // full data — only populated for admin+, empty for public
+        publicEmployees,      // sanitized (name, phone, whatsapp) — always populated
+        users: employees,     // backward-compat alias
         teams,
         vehicles,
         vehiclesMap,
@@ -188,7 +203,7 @@ export const RosterProvider = ({ children }) => {
         logActivity: (params) => logActivity({ adminEmail, ...params }),
         AUDIT_ACTIONS,
     }), [
-        employees, teams, vehicles, vehiclesMap,
+        employees, publicEmployees, teams, vehicles, vehiclesMap,
         hotlineConfig, hotlineRoster, fieldSupervisorRoster, loading,
         addEmployee, updateEmployee, deleteEmployee, restoreEmployee, toggleLeave,
         addTeam, updateTeam, deleteTeam, addVehicle, deleteVehicle,

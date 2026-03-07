@@ -156,28 +156,30 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
     const cnicValue = watch('cnic');
 
     return (
-        <Card className="sticky top-24">
-            <h3 className="font-black text-xl mb-6 uppercase flex items-center">
-                {editingEmployee ? <Save className="mr-2" /> : <Plus className="mr-2" />}
+        <Card className="w-full">
+            <h3 className="font-black text-lg md:text-xl mb-4 md:mb-6 uppercase flex items-center">
+                {editingEmployee ? <Save className="mr-2" size={20} /> : <Plus className="mr-2" size={20} />}
                 {editingEmployee ? 'Update Member' : 'Add New Member'}
             </h3>
 
             <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4" noValidate>
 
-                {/* ── Employee Photo ── */}
-                <div className="w-full">
-                    <label className="block text-xs font-bold uppercase mb-1 text-gray-700 flex items-center gap-1">
-                        <Camera size={11} />
-                        Employee Photo
-                    </label>
-                    <div className="flex items-center gap-3">
-                        {/* Preview */}
-                        <div
-                            className={`border-2 border-black bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 ${uploading ? 'animate-pulse' : ''}`}
-                            style={{ width: 64, height: 64 }}
-                        >
-                            {photoUrl ? (
-                                <img src={photoUrl} alt="Photo" className="w-full h-full object-cover" />
+                {/* ── Photo + Employee ID row ── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Employee Photo */}
+                    <div className="w-full">
+                        <label className="text-xs font-bold uppercase mb-1 text-gray-700 flex items-center gap-1">
+                            <Camera size={11} />
+                            Employee Photo
+                        </label>
+                        <div className="flex items-center gap-3">
+                            {/* Preview */}
+                            <div
+                                className={`border-2 border-black bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 ${uploading ? 'animate-pulse' : ''}`}
+                                style={{ width: 64, height: 64 }}
+                            >
+                                {photoUrl ? (
+                                    <img src={photoUrl} alt="Photo" className="w-full h-full object-cover" />
                             ) : uploading ? (
                                 <Loader size={20} className="text-gray-400 animate-spin" />
                             ) : (
@@ -219,36 +221,39 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
                     <p className="text-[10px] text-gray-400 mt-1">JPEG, PNG, WebP · Max 2MB · Auto-cropped to square</p>
                 </div>
 
-                {/* ── Employee ID ── */}
-                <div className="w-full">
-                    <label className="block text-xs font-bold uppercase mb-1 text-gray-700 flex items-center gap-1">
-                        <Hash size={11} />
-                        Employee ID
-                    </label>
-                    <input
-                        placeholder="e.g. EMP-001"
-                        {...register('employeeId')}
-                        style={{ minHeight: 44 }}
-                        className={`${fieldClass}${errors.employeeId ? errorClass : ''} font-mono uppercase tracking-wide`}
-                    />
-                    {errors.employeeId && (
-                        <p className="text-xs text-red-600 font-bold mt-1">{errors.employeeId.message}</p>
-                    )}
+                    {/* Employee ID - in same grid */}
+                    <div className="w-full">
+                        <label className="text-xs font-bold uppercase mb-1 text-gray-700 flex items-center gap-1">
+                            <Hash size={11} />
+                            Employee ID
+                        </label>
+                        <input
+                            placeholder="e.g. EMP-001"
+                            {...register('employeeId')}
+                            style={{ minHeight: 44 }}
+                            className={`${fieldClass}${errors.employeeId ? errorClass : ''} font-mono uppercase tracking-wide`}
+                        />
+                        {errors.employeeId && (
+                            <p className="text-xs text-red-600 font-bold mt-1">{errors.employeeId.message}</p>
+                        )}
+                    </div>
                 </div>
 
-                {/* ── Name / Father Name ── */}
-                <Input
-                    label="Full Name"
-                    error={errors.name?.message}
-                    style={{ minHeight: 44 }}
-                    {...register('name')}
-                />
-                <Input
-                    label="Father Name"
-                    error={errors.fatherName?.message}
-                    style={{ minHeight: 44 }}
-                    {...register('fatherName')}
-                />
+                {/* ── Name / Father Name ── 2-column grid on larger screens */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                        label="Full Name"
+                        error={errors.name?.message}
+                        style={{ minHeight: 44 }}
+                        {...register('name')}
+                    />
+                    <Input
+                        label="Father Name"
+                        error={errors.fatherName?.message}
+                        style={{ minHeight: 44 }}
+                        {...register('fatherName')}
+                    />
+                </div>
 
                 {/* ── Phone / WhatsApp ── */}
                 <div className="space-y-2">
@@ -261,7 +266,7 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
                         <span className="text-xs font-bold uppercase">WhatsApp is same as Phone</span>
                     </label>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Phone */}
                         <div className="w-full">
                             <label className="block text-xs font-bold uppercase mb-1 text-gray-700">Phone</label>
@@ -295,47 +300,50 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
                     </div>
                 </div>
 
-                {/* ── Designation ── */}
-                <div className="w-full">
-                    <label className="block text-xs font-bold uppercase mb-1 text-gray-700">Designation</label>
-                    <select
-                        value={designation}
-                        onChange={e => setValue('designation', e.target.value, { shouldValidate: true })}
-                        style={{ minHeight: 44 }}
-                        className={`${fieldClass}${errors.designation ? errorClass : ''}`}
-                    >
-                        {DESIGNATION_OPTIONS.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                    </select>
-                    {errors.designation && (
-                        <p className="text-xs text-red-600 font-bold mt-1">{errors.designation.message}</p>
-                    )}
-                </div>
+                {/* ── Designation / CNIC row ── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Designation */}
+                    <div className="w-full">
+                        <label className="block text-xs font-bold uppercase mb-1 text-gray-700">Designation</label>
+                        <select
+                            value={designation}
+                            onChange={e => setValue('designation', e.target.value, { shouldValidate: true })}
+                            style={{ minHeight: 44 }}
+                            className={`${fieldClass}${errors.designation ? errorClass : ''}`}
+                        >
+                            {DESIGNATION_OPTIONS.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
+                        {errors.designation && (
+                            <p className="text-xs text-red-600 font-bold mt-1">{errors.designation.message}</p>
+                        )}
+                    </div>
 
-                {/* ── CNIC ── full-width, same styling ── */}
-                <div className="w-full">
-                    <label className="block text-xs font-bold uppercase mb-1 text-gray-700">
-                        CNIC Number
-                    </label>
-                    <input
-                        placeholder="42101-1234567-1"
-                        maxLength={15}
-                        value={cnicValue}
-                        onChange={handleCnicChange}
-                        style={{ minHeight: 44 }}
-                        className={`${fieldClass} font-mono${errors.cnic ? errorClass : ''}`}
-                    />
-                    {errors.cnic && (
-                        <p className="text-xs text-red-600 font-bold mt-1">{errors.cnic.message}</p>
-                    )}
+                    {/* CNIC */}
+                    <div className="w-full">
+                        <label className="block text-xs font-bold uppercase mb-1 text-gray-700">
+                            CNIC Number
+                        </label>
+                        <input
+                            placeholder="42101-1234567-1"
+                            maxLength={15}
+                            value={cnicValue}
+                            onChange={handleCnicChange}
+                            style={{ minHeight: 44 }}
+                            className={`${fieldClass} font-mono${errors.cnic ? errorClass : ''}`}
+                        />
+                        {errors.cnic && (
+                            <p className="text-xs text-red-600 font-bold mt-1">{errors.cnic.message}</p>
+                        )}
+                    </div>
                 </div>
 
                 <input type="hidden" {...register('roleType')} />
 
                 {/* ── License (driver only) ── */}
                 {showLicense && (
-                    <div className="w-full">
+                    <div className="w-full md:w-1/2">
                         <label className="block text-xs font-bold uppercase mb-1 text-gray-700">License Number</label>
                         <div className="relative">
                             <FileText size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />

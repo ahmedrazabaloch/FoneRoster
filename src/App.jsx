@@ -1,12 +1,12 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './auth/AuthContext';
 import { RosterProvider } from './context/RosterContext';
 import { ErrorBoundary } from './components/feedback/ErrorBoundary';
 import { LoadingSpinner } from './components/feedback/LoadingSpinner';
 import { Header } from './components/layout/Header';
-import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { ProtectedRoute } from './auth/ProtectedRoute';
 
 // Lazy load pages for code splitting
 const DashboardPage = lazy(() =>
@@ -16,16 +16,13 @@ const SearchPage = lazy(() =>
   import('./pages/SearchPage').then(m => ({ default: m.SearchPage }))
 );
 const LoginPage = lazy(() =>
-  import('./pages/LoginPage').then(m => ({ default: m.LoginPage }))
+  import('./auth/LoginPage').then(m => ({ default: m.LoginPage }))
 );
 const AdminPage = lazy(() =>
   import('./pages/AdminPage').then(m => ({ default: m.AdminPage }))
 );
 const LogsPage = lazy(() =>
   import('./pages/LogsPage').then(m => ({ default: m.LogsPage }))
-);
-const SuperAdminPage = lazy(() =>
-  import('./pages/SuperAdminPage').then(m => ({ default: m.SuperAdminPage }))
 );
 const TeamPage = lazy(() =>
   import('./pages/TeamPage').then(m => ({ default: m.TeamPage }))
@@ -75,14 +72,6 @@ function App() {
                     element={
                       <ProtectedRoute requiredRole="admin">
                         <LogsPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/super-admin"
-                    element={
-                      <ProtectedRoute requiredRole="superadmin">
-                        <SuperAdminPage />
                       </ProtectedRoute>
                     }
                   />

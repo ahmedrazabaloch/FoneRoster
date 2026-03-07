@@ -2,16 +2,49 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Truck, Shield, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { ROLES } from '../../utils/rbac';
 import { Button } from '../ui';
 
 export const Header = () => {
-    const { user, logout } = useAuth();
+    const { user, role, logout } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const isAdmin = role === ROLES.ADMIN || role === ROLES.SUPER_ADMIN;
 
     const handleLogout = async () => {
         await logout();
         setIsMenuOpen(false);
     };
+
+    const NAV_LINK = ({ to, children, onClick }) => (
+        <NavLink
+            to={to}
+            onClick={onClick}
+            className={({ isActive }) =>
+                `px-4 py-2 font-bold text-sm uppercase tracking-wide transition-all border-2 ${isActive
+                    ? 'bg-red-600 text-white border-black shadow-brutal'
+                    : 'border-transparent hover:border-black hover:shadow-brutal hover:bg-red-50 text-gray-900'
+                }`
+            }
+        >
+            {children}
+        </NavLink>
+    );
+
+    const MOBILE_LINK = ({ to, children, onClick }) => (
+        <NavLink
+            to={to}
+            onClick={() => { setIsMenuOpen(false); onClick?.(); }}
+            className={({ isActive }) =>
+                `block w-full text-left font-bold text-base py-3 px-3 border-2 min-h-[48px] ${isActive
+                    ? 'bg-red-600 text-white border-black'
+                    : 'border-transparent text-gray-900'
+                }`
+            }
+        >
+            {children}
+        </NavLink>
+    );
 
     return (
         <nav className="bg-white border-b-4 border-black sticky top-0 z-50">
@@ -32,42 +65,13 @@ export const Header = () => {
                     </NavLink>
 
                     {/* Desktop Nav */}
-                    <div className="hidden md:flex items-center space-x-6">
-                        <NavLink
-                            to="/"
-                            className={({ isActive }) =>
-                                `px-4 py-2 font-bold text-sm uppercase tracking-wide transition-all border-2 ${isActive
-                                    ? 'bg-red-600 text-white border-black shadow-brutal'
-                                    : 'border-transparent hover:border-black hover:shadow-brutal hover:bg-red-50 text-gray-900'
-                                }`
-                            }
-                        >
-                            Dashboard
-                        </NavLink>
-                        <NavLink
-                            to="/search"
-                            className={({ isActive }) =>
-                                `px-4 py-2 font-bold text-sm uppercase tracking-wide transition-all border-2 ${isActive
-                                    ? 'bg-red-600 text-white border-black shadow-brutal'
-                                    : 'border-transparent hover:border-black hover:shadow-brutal hover:bg-red-50 text-gray-900'
-                                }`
-                            }
-                        >
-                            Search
-                        </NavLink>
+                    <div className="hidden md:flex items-center space-x-4">
+                        <NAV_LINK to="/">Dashboard</NAV_LINK>
+                        <NAV_LINK to="/search">Search</NAV_LINK>
+
                         {user ? (
                             <>
-                                <NavLink
-                                    to="/admin"
-                                    className={({ isActive }) =>
-                                        `px-4 py-2 font-bold text-sm uppercase tracking-wide border-2 ${isActive
-                                            ? 'bg-black text-white border-black'
-                                            : 'border-transparent hover:border-black hover:shadow-brutal text-gray-900'
-                                        }`
-                                    }
-                                >
-                                    Admin
-                                </NavLink>
+                                {isAdmin && <NAV_LINK to="/admin">Admin</NAV_LINK>}
                                 <Button
                                     onClick={handleLogout}
                                     variant="ghost"
@@ -103,44 +107,12 @@ export const Header = () => {
             {/* Mobile Nav */}
             {isMenuOpen && (
                 <div className="md:hidden bg-white border-t-2 border-black p-3 space-y-1">
-                    <NavLink
-                        to="/"
-                        onClick={() => setIsMenuOpen(false)}
-                        className={({ isActive }) =>
-                            `block w-full text-left font-bold text-base py-3 px-3 border-2 min-h-[48px] ${isActive
-                                ? 'bg-red-600 text-white border-black'
-                                : 'border-transparent text-gray-900'
-                            }`
-                        }
-                    >
-                        Dashboard
-                    </NavLink>
-                    <NavLink
-                        to="/search"
-                        onClick={() => setIsMenuOpen(false)}
-                        className={({ isActive }) =>
-                            `block w-full text-left font-bold text-base py-3 px-3 border-2 min-h-[48px] ${isActive
-                                ? 'bg-red-600 text-white border-black'
-                                : 'border-transparent text-gray-900'
-                            }`
-                        }
-                    >
-                        Site Search
-                    </NavLink>
+                    <MOBILE_LINK to="/">Dashboard</MOBILE_LINK>
+                    <MOBILE_LINK to="/search">Site Search</MOBILE_LINK>
+
                     {user ? (
                         <>
-                            <NavLink
-                                to="/admin"
-                                onClick={() => setIsMenuOpen(false)}
-                                className={({ isActive }) =>
-                                    `block w-full text-left font-bold text-base py-3 px-3 border-2 min-h-[48px] ${isActive
-                                        ? 'bg-black text-white border-black'
-                                        : 'border-transparent text-gray-900'
-                                    }`
-                                }
-                            >
-                                Admin Panel
-                            </NavLink>
+                            {isAdmin && <MOBILE_LINK to="/admin">Admin Panel</MOBILE_LINK>}
                             <button
                                 onClick={handleLogout}
                                 className="block w-full text-left font-bold text-base py-3 px-3 text-red-600 min-h-[48px]"
@@ -149,13 +121,7 @@ export const Header = () => {
                             </button>
                         </>
                     ) : (
-                        <NavLink
-                            to="/login"
-                            onClick={() => setIsMenuOpen(false)}
-                            className="block w-full text-left font-bold text-base py-3 px-3 min-h-[48px]"
-                        >
-                            Admin Login
-                        </NavLink>
+                        <MOBILE_LINK to="/login">Admin Login</MOBILE_LINK>
                     )}
                 </div>
             )}

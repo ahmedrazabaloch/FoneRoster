@@ -1,5 +1,8 @@
 /**
- * firebaseService.js — v2 (Production Hardened)
+ * firebaseService.js — v3 (Production Hardened)
+ *
+ * Changes from v2:
+ *  - Centralized error handling via utils/errorHandler.js
  *
  * Changes from v1:
  *  - Soft delete query changed from != true → == false (strict equality, requires composite index)
@@ -28,6 +31,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { logActivity, AUDIT_ACTIONS } from './auditService';
+import { handleError } from '../utils/errorHandler';
+import { sanitizeEmployeeData } from '../utils/sanitizeInput';
 
 // ─── Constants ─────────────────────────────────────────────────────
 
@@ -184,7 +189,7 @@ export const employeeService = {
             });
             return newDocRef.id;
         } catch (err) {
-            console.error('[EmployeeService.add]', err);
+            handleError(err, 'EmployeeService.add');
             throw err;
         }
     },

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useContext, useEffect, useRef, useMemo } from 'react';
 import { Plus, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { EmployeeForm } from './EmployeeForm';
-import { EmployeeTable } from './EmployeeTable';
+import { EmployeeGrid } from './EmployeeGrid';
 import { RosterContext } from '../../context/RosterContext';
 import { useWindowWidth } from '../../hooks/useWindowWidth';
 import { useAdminEmployees } from '../../hooks/useAdminEmployees';
@@ -190,8 +190,9 @@ export const DirectoryManager = () => {
                     </button>
                 </div>
 
-                <EmployeeTable
+                <EmployeeGrid
                     employees={employees}
+                    teams={teams}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onRestore={showInactive ? handleRestore : null}

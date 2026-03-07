@@ -4,11 +4,12 @@
  * Displays latest 100 audit logs ordered by timestamp DESC.
  * Filters: action type, date range, user email search.
  * Accessible to ADMIN and SUPER_ADMIN only (rendered in RosterManager).
+ *
+ * ARCHITECTURE: Uses auditLogService from service layer — no direct Firestore imports.
  */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Shield, Search, Filter, ChevronLeft, ChevronRight, Loader } from 'lucide-react';
-import { collection, query, orderBy, limit, onSnapshot, where, Timestamp } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { auditLogService } from '../../services/firebaseService';
 import { AUDIT_ACTIONS } from '../../services/auditService';
 
 const ITEMS_PER_PAGE = 15;
@@ -62,25 +63,19 @@ export const AuditLogViewer = () => {
     const [dateTo, setDateTo] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Subscribe to logs
+    // Subscribe to logs via service layer
     useEffect(() => {
         setLoading(true);
-        const constraints = [
-            collection(db, 'adminActivityLogs'),
-        ];
-        const q = query(
-            collection(db, 'adminActivityLogs'),
-            orderBy('timestamp', 'desc'),
-            limit(100)
-        );
-
-        const unsub = onSnapshot(q, (snap) => {
-            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            setLogs(data);
-            setLoading(false);
-        }, (err) => {
-            console.error('[AuditLogViewer] subscription error:', err);
-            setLoading(false);
+        const unsub = auditLogService.subscribe({
+            onData: (data) => {
+                setLogs(data);
+                setLoading(false);
+            },
+            onError: (err) => {
+                console.error('[AuditLogViewer] subscription error:', err);
+                setLoading(false);
+            },
+            limitCount: 100,
         });
 
         return unsub;

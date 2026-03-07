@@ -1,82 +1,45 @@
 import React from 'react';
 
 /**
- * Shimmer skeleton placeholder for EmployeeCardMobile.
- * Shown while Firebase data is loading on mobile.
+ * EmployeeCardSkeleton.jsx
+ * Shimmer skeleton placeholder for EmployeeCard.
+ * Matches the new card layout with photo, badges, and contact sections.
  */
 export const EmployeeCardSkeleton = () => (
-    <div style={s.card}>
-        <style>{`
-            @keyframes shimmer {
-                0%   { background-position: -400px 0; }
-                100% { background-position: 400px 0; }
-            }
-        `}</style>
-
-        {/* Top row */}
-        <div style={s.topRow}>
-            <div style={{ ...s.shimmer, width: 44, height: 44, borderRadius: '50%', flexShrink: 0 }} />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ ...s.shimmer, height: 14, width: '65%', borderRadius: 2 }} />
-                <div style={{ ...s.shimmer, height: 11, width: '40%', borderRadius: 2 }} />
-            </div>
-            <div style={{ ...s.shimmer, height: 20, width: 52, borderRadius: 999 }} />
-        </div>
-
-        {/* Middle rows */}
-        <div style={s.middle}>
-            {[100, 130, 120].map((w, i) => (
-                <div key={i} style={s.infoRow}>
-                    <div style={{ ...s.shimmer, height: 11, width: 36, borderRadius: 2 }} />
-                    <div style={{ ...s.shimmer, height: 11, width: w, borderRadius: 2, marginLeft: 8 }} />
+    <div className="bg-white border-2 border-black p-4 animate-pulse">
+        {/* Top Section */}
+        <div className="flex items-start gap-3">
+            {/* Photo */}
+            <div className="w-14 h-14 rounded-full bg-gray-200 flex-shrink-0" />
+            
+            {/* Name & Info */}
+            <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-2 flex-1">
+                        <div className="h-4 bg-gray-200 rounded w-3/4" />
+                        <div className="h-2.5 bg-gray-100 rounded w-1/3" />
+                    </div>
+                    <div className="w-8 h-8 bg-gray-100 rounded" />
                 </div>
-            ))}
+                
+                {/* Badges */}
+                <div className="flex gap-2 mt-3">
+                    <div className="h-5 bg-gray-100 rounded w-16" />
+                    <div className="h-5 bg-gray-100 rounded w-16" />
+                </div>
+            </div>
         </div>
-
-        {/* Action row */}
-        <div style={s.actionRow}>
-            <div style={{ ...s.shimmer, flex: 1, height: 44, borderRadius: 2 }} />
-            <div style={{ ...s.shimmer, flex: 1, height: 44, borderRadius: 2 }} />
+        
+        {/* Contact Section */}
+        <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+            <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-gray-200 rounded" />
+                <div className="h-3 bg-gray-100 rounded w-28" />
+            </div>
+            <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-gray-200 rounded" />
+                <div className="h-3 bg-gray-100 rounded w-24" />
+            </div>
         </div>
     </div>
 );
-
-const shimmerBg = 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 37%, #f0f0f0 63%)';
-
-const s = {
-    card: {
-        border: '2px solid #000',
-        boxShadow: '3px 3px 0 #000',
-        background: '#fff',
-        padding: 16,
-        marginBottom: 16,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-    },
-    shimmer: {
-        background: shimmerBg,
-        backgroundSize: '800px 100%',
-        animation: 'shimmer 1.4s infinite linear',
-    },
-    topRow: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-    },
-    middle: {
-        borderTop: '2px solid #000',
-        paddingTop: 12,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-    },
-    infoRow: {
-        display: 'flex',
-        alignItems: 'center',
-    },
-    actionRow: {
-        display: 'flex',
-        gap: 10,
-    },
-};

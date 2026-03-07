@@ -42,7 +42,7 @@ function sanitizeSupervisor(emp) {
 
 export function useDashboardData() {
     const {
-        employees,
+        publicEmployees,
         teams,
         vehiclesMap,
         hotlineConfig,
@@ -50,6 +50,10 @@ export function useDashboardData() {
         fieldSupervisorRoster,
         loading,
     } = useContext(RosterContext);
+
+    // Use publicEmployees for the dashboard — always available without auth.
+    // Full employees are only available to admin+ via a separate subscription.
+    const employees = publicEmployees;
 
     const { time, currentHour } = useClock();
 

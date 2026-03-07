@@ -13,7 +13,7 @@ import React, { useEffect, useState, useCallback, useContext, useRef } from 'rea
 import { Filter, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { auditLogService } from '../../services/firebaseService';
 import { AUDIT_ACTIONS } from '../../services/auditService';
-import { AuthContext } from '../../context/AuthContext';
+import { AuthContext } from '../../auth/AuthContext';
 
 const PAGE_SIZE = 50;
 

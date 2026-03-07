@@ -1,5 +1,5 @@
 /**
- * ProtectedRoute.jsx — Role-Enforced Route Guard (Phase 2)
+ * ProtectedRoute.jsx — Role-Enforced Route Guard (Unified Auth)
  *
  * Usage:
  *   <ProtectedRoute requiredRole="admin">
@@ -11,18 +11,22 @@
  *   2. Not authenticated → redirect to /login
  *   3. Role insufficient → "Access Denied" page (no redirect)
  *   4. Role sufficient → render children
+ *
+ * Role is checked using meetsMinimumRole() which compares role hierarchy levels.
+ * Roles come exclusively from Firebase custom claims via AuthContext.
  */
 import React from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { meetsMinimumRole } from '../../utils/rbac';
-import { LoadingSpinner } from '../feedback/LoadingSpinner';
+import { useAuth } from '../hooks/useAuth';
+import { meetsMinimumRole, ROLES, getDefaultRouteForRole } from '../utils/rbac';
+import { LoadingSpinner } from '../components/feedback/LoadingSpinner';
 import { ShieldOff } from 'lucide-react';
 
 export const ProtectedRoute = ({ children, requiredRole }) => {
-    const { user, role, loading } = useAuth();
+    const { user, role, isLoading } = useAuth();
 
-    if (loading) {
+    // Auth still initialising — always show spinner, never flash Access Denied
+    if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <LoadingSpinner message="Checking authentication..." />

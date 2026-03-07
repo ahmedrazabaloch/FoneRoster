@@ -1,17 +1,19 @@
 /**
- * LoginForm.jsx
+ * LoginForm.jsx — Unified Login Component
  *
- * Unified login for SUPER_ADMIN, ADMIN, and TEAM_USER.
+ * Single login page for all user roles: SUPER_ADMIN, ADMIN, TEAM_USER.
  *
  * Identifier field accepts:
  *  - Email address  → passed directly to Firebase Auth
  *  - Phone number   → converted to {phone}@admin.local before Firebase Auth
  *
- * Post-login redirect is role-aware:
- *  - SUPER_ADMIN → /super-admin
+ * Post-login redirect is role-aware using getDefaultRouteForRole():
+ *  - SUPER_ADMIN → /admin
  *  - ADMIN       → /admin
  *  - TEAM_USER   → /team
- *  - fallback    → /admin
+ *  - PUBLIC      → / (dashboard)
+ *
+ * Role is resolved exclusively from Firebase custom claims.
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -19,11 +21,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Shield, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '../../hooks/useAuth';
-import { loginSchema } from '../../lib/validators';
-import { Card, Button } from '../../components/ui';
-import { ROLES } from '../../utils/rbac';
-import { phoneToEmail } from '../../services/adminService';
+import { useAuth } from '../hooks/useAuth';
+import { loginSchema } from './validators';
+import { Card, Button } from '../components/ui';
+import { getDefaultRouteForRole } from '../utils/rbac';
+import { phoneToEmail } from '../services/adminService';
 
 /** Determine if the identifier looks like a phone number (starts with 03, 11 digits) */
 function looksLikePhone(identifier) {
@@ -40,19 +42,9 @@ function toFirebaseEmail(identifier) {
     return trimmed.toLowerCase();
 }
 
-/** Map role to the correct post-login route */
-function routeForRole(role) {
-    switch (role) {
-        case ROLES.SUPER_ADMIN: return '/super-admin';
-        case ROLES.ADMIN: return '/admin';
-        case ROLES.TEAM_USER: return '/team';
-        default: return '/admin';
-    }
-}
-
 export const LoginForm = () => {
     const navigate = useNavigate();
-    const { login, role, user, loading: authLoading } = useAuth();
+    const { login, role, user, isLoading: authLoading } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
@@ -62,10 +54,11 @@ export const LoginForm = () => {
         formState: { errors },
     } = useForm({ resolver: zodResolver(loginSchema) });
 
-    // If already authenticated, redirect immediately
+    // If already authenticated, redirect based on role
     useEffect(() => {
         if (!authLoading && user) {
-            navigate(routeForRole(role), { replace: true });
+            const targetRoute = getDefaultRouteForRole(role);
+            navigate(targetRoute, { replace: true });
         }
     }, [authLoading, user, role, navigate]);
 
@@ -77,7 +70,7 @@ export const LoginForm = () => {
 
         if (result.success) {
             toast.success('Login successful!');
-            // Role may not be resolved yet — navigate after AuthContext catches up via useEffect
+            // Role resolution happens via AuthContext — redirect handled by useEffect
         } else {
             // Provide a friendly error for wrong credentials, without exposing internals
             const msg = result.error?.includes('invalid-credential') || result.error?.includes('wrong-password')

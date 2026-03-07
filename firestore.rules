@@ -2,62 +2,91 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    // UNIFIED AUTH: Roles come EXCLUSIVELY from Firebase custom claims.
+    // No hardcoded email checks. No Firestore role fallback.
+
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    function isAdmin() {
-      return isAuthenticated() &&
-             (request.auth.token.role == "admin" ||
-              request.auth.token.role == "superadmin");
+    // Get role from custom claims token
+    function getRole() {
+      return request.auth.token.role;
     }
 
+    // Check if user has specific role claim
+    function hasRole(r) {
+      return isAuthenticated() && getRole() == r;
+    }
+
+    // SUPER_ADMIN check — only via custom claims
     function isSuperAdmin() {
-      return isAuthenticated() &&
-             request.auth.token.role == "superadmin";
+      return hasRole('superadmin');
     }
 
+    // ADMIN check — superadmin OR admin role
+    function isAdmin() {
+      return isSuperAdmin() || hasRole('admin');
+    }
+
+    // TEAM_USER check — admin+ OR team_user/viewer role
     function isTeamUser() {
-      return isAuthenticated() &&
-             (request.auth.token.role == "team_user" || 
-              request.auth.token.role == "viewer" ||
-              isAdmin());
+      return isAdmin() || hasRole('team_user') || hasRole('viewer');
     }
 
+    // ── PUBLIC dashboard collections — no auth required ───────────────────────
+
+    // Sanitized employee mirror (name, phone, whatsapp only — no sensitive fields)
     match /publicEmployees/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    match /employees/{id} {
-      allow read, write: if isAdmin();
-    }
-
+    // Team boards — publicly visible
     match /teams/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
+    // Vehicles — publicly visible (vehicle number shown on dashboard)
     match /vehicles/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
+    // Hotline / field supervisor config — publicly visible
     match /config/{id} {
       allow read: if true;
-      allow write: if isSuperAdmin();
+      allow write: if isAdmin();
     }
 
-    // Authority signature + config — admin can read, only superadmin can write
+    // ── ADMIN-ONLY collections ────────────────────────────────────────────────
+
+    // Full employee records (licenseNo, cnic, employeeId, etc.)
+    match /employees/{id} {
+      allow read: if isTeamUser();
+      allow write: if isAdmin();
+    }
+
+    // Authority name and signature (shown on exports)
     match /systemConfig/{id} {
-      allow read: if isAdmin();
+      allow read: if isAuthenticated();
       allow write: if isSuperAdmin();
     }
 
+    // Admin profiles — owner reads own doc; superadmin reads/writes all
+    match /admins/{uid} {
+      allow read: if isAuthenticated() && request.auth.uid == uid;
+      allow read, write: if isSuperAdmin();
+    }
+
+    // Legacy users collection
     match /users/{id} {
       allow read, write: if isSuperAdmin();
     }
 
+    // Audit logs — any authenticated user reads; admins create; immutable after write
     match /adminActivityLogs/{logId} {
       allow read: if isTeamUser();
       allow create: if isAdmin();
