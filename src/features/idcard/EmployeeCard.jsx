@@ -1,188 +1,390 @@
-/**
- * EmployeeCard.jsx — CR80 ID Card Preview (Front + Back)
- *
- * Screen preview at 324×204px (landscape CR80 ratio: 85.6:53.98 ≈ 1.586:1)
- * Matches the PDF output from generateIdCardPdf.js
- *
- * Front: Company header, photo, name, designation, ID, authority signature
- * Back:  QR code, phone, license (drivers only), footer, microtext
- *
- * Data rules:
- *   - No fatherName displayed
- *   - No WhatsApp number
- *   - License field ONLY when designation === 'driver'
- *   - Diagonal "F1" watermark at low opacity
- */
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { User } from 'lucide-react';
+import logoAsset from '../../assets/logo.png';
+import CardFrontBg from '../../assets/card_front_bg.svg?react';
+import CardBackBg from '../../assets/card_back_bg.svg?react';
+import {
+    ADDRESS_LINES,
+    EMERGENCY_CONTACT,
+    buildIdCardQrPayload,
+    getCardDetails,
+} from './idCardConstants';
 
-// Landscape CR80 preview ratio: 85.6mm → 430px, 53.98mm → 271px
-const CARD_W = 430;
-const CARD_H = 271;
-
-const DESIGNATION_LABELS = {
-    driver: 'Driver',
-    supervisor: 'Vehicle Supervisor',
-    helper: 'Helper',
-    field_supervisor: 'Field Supervisor',
-    executive_officer: 'Executive Officer',
+const baseCardStyle = {
+    position: 'relative',
+    width: '300px',
+    height: '480px',
+    borderRadius: '18px',
+    overflow: 'hidden',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+    fontFamily: 'Barlow, sans-serif',
 };
 
-// ─── Watermark Pattern ─────────────────────────────────────────────
-
-const WatermarkPattern = () => (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" style={{ opacity: 0.06 }}>
-        <div style={{
-            position: 'absolute', inset: '-50%', width: '200%', height: '200%',
-            transform: 'rotate(-35deg)', transformOrigin: 'center',
-        }}>
-            {Array.from({ length: 15 }, (_, row) => (
-                <div key={row} style={{ display: 'flex', gap: 32, marginBottom: 16 }}>
-                    {Array.from({ length: 12 }, (_, col) => (
-                        <span key={col} style={{
-                            fontSize: 14, fontWeight: 900, color: '#888',
-                            letterSpacing: 2, whiteSpace: 'nowrap', userSelect: 'none',
-                        }}>
-                            F1
-                        </span>
-                    ))}
-                </div>
-            ))}
+const FrontSignatureBlock = () => (
+    <div
+        style={{
+            position: 'absolute',
+            right: '18px',
+            bottom: '14px',
+            width: '110px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+        }}
+    >
+        <div
+            style={{
+                fontFamily: 'Dancing Script, cursive',
+                fontWeight: 600,
+                fontSize: '26px',
+                color: '#2a2a2a',
+                lineHeight: 1,
+                marginBottom: '4px',
+            }}
+        >
+            Formula One
+        </div>
+        <div style={{ width: '90px', borderTop: '1px solid #ccc' }} />
+        <div
+            style={{
+                marginTop: '4px',
+                fontFamily: 'Barlow, sans-serif',
+                fontWeight: 400,
+                fontSize: '9px',
+                color: '#999',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+            }}
+        >
+            Authorized By
         </div>
     </div>
 );
 
 // ─── Front Side ────────────────────────────────────────────────────
 
-const CardFront = ({ employee }) => {
-    const designationLabel = DESIGNATION_LABELS[employee.designation] || employee.designation;
+const CardFront = ({ employee, signatureUrl }) => {
+    const details = getCardDetails(employee);
+    const qrValue = buildIdCardQrPayload(employee);
 
     return (
-        <div
-            className="relative bg-white border-[3px] border-black overflow-hidden flex flex-col"
-            style={{ width: CARD_W, height: CARD_H }}
-        >
-            <WatermarkPattern />
+        <div style={baseCardStyle}>
+            <CardFrontBg
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                }}
+            />
 
-            {/* ── Red header ── */}
-            <div className="bg-[#E10600] flex items-center gap-2 px-3 py-1.5 border-b-[3px] border-black relative z-10" style={{ minHeight: 32 }}>
-                <div className="bg-white border border-black flex items-center justify-center" style={{ width: 18, height: 18 }}>
-                    <span className="text-[#E10600] font-black" style={{ fontSize: 7, lineHeight: 1 }}>F1</span>
-                </div>
-                <div>
-                    <div className="text-white font-black leading-none" style={{ fontSize: 9, letterSpacing: 2 }}>FORMULA ONE</div>
-                    <div className="text-red-200 font-bold" style={{ fontSize: 5, letterSpacing: 1.5 }}>TELECOM LOGISTICS</div>
-                </div>
-            </div>
-
-            {/* ── Yellow accent ── */}
-            <div style={{ height: 3, background: 'linear-gradient(90deg, #E10600, #FACC15, #E10600)' }} />
-
-            {/* ── Main content ── */}
-            <div className="flex-1 flex items-center px-4 py-2 relative z-10" style={{ gap: 16 }}>
-                {/* Photo */}
-                <div className="border-[2px] border-black bg-gray-100 shrink-0 overflow-hidden flex items-center justify-center"
-                    style={{ width: 72, height: 88 }}
+            <div style={{ position: 'absolute', inset: 0 }}>
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '20px',
+                        left: 0,
+                        right: 0,
+                        textAlign: 'center',
+                    }}
                 >
-                    {employee.photoUrl ? (
-                        <img src={employee.photoUrl} alt={employee.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img
+                        src={logoAsset}
+                        alt="Formula One"
+                        style={{
+                            width: '150px',
+                            height: '46px',
+                            objectFit: 'contain',
+                            margin: '0 auto',
+                        }}
+                    />
+                </div>
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '68px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: '148px',
+                        height: '162px',
+                        borderRadius: '9px',
+                        border: '3px solid #fff',
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+                        overflow: 'hidden',
+                        background: '#ffffff',
+                    }}
+                >
+                    {details.photoUrl ? (
+                        <img
+                            src={details.photoUrl}
+                            alt={details.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
                     ) : (
-                        <User size={28} className="text-gray-400" />
+                        <div className="h-full w-full flex items-center justify-center text-[#B8B8B8] bg-white">
+                            <User size={52} strokeWidth={1.5} />
+                        </div>
                     )}
                 </div>
 
-                {/* Details */}
-                <div className="flex flex-col justify-center flex-1 min-w-0">
-                    <div className="font-black uppercase tracking-wide text-gray-900 leading-tight mb-1" style={{ fontSize: 13 }}>
-                        {employee.name}
-                    </div>
-                    <div className="bg-black text-white font-black uppercase self-start px-2 py-0.5 mb-1.5" style={{ fontSize: 6, letterSpacing: 2 }}>
-                        {designationLabel}
-                    </div>
-                    <div className="inline-flex items-center gap-1 bg-gray-100 border border-black px-2 py-0.5 self-start">
-                        <span className="font-mono font-black text-gray-700" style={{ fontSize: 8 }}>
-                            {employee.employeeId || '—'}
-                        </span>
-                    </div>
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '244px',
+                        width: '100%',
+                        textAlign: 'center',
+                        fontFamily: 'Barlow, sans-serif',
+                        fontWeight: 700,
+                        fontSize: '20px',
+                        color: '#1a1a1a',
+                        lineHeight: 1.2,
+                        padding: '0 16px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                    }}
+                    title={details.name}
+                >
+                    {details.name}
                 </div>
 
-                {/* Signature area */}
-                <div className="shrink-0 flex flex-col items-center justify-end self-end" style={{ width: 80 }}>
-                    <div className="border-b border-gray-400 w-full mb-0.5" />
-                    <span className="text-gray-400 font-bold uppercase" style={{ fontSize: 4, letterSpacing: 1 }}>
-                        Authorized Signatory
-                    </span>
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '268px',
+                        width: '100%',
+                        textAlign: 'center',
+                        fontFamily: 'Barlow, sans-serif',
+                        fontStyle: 'italic',
+                        fontWeight: 400,
+                        fontSize: '13px',
+                        color: '#666',
+                        lineHeight: 1.2,
+                        padding: '0 16px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                    }}
+                    title={details.designation}
+                >
+                    {details.designation}
                 </div>
+
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '287px',
+                        width: '100%',
+                        textAlign: 'center',
+                        fontFamily: 'Barlow, sans-serif',
+                        fontWeight: 600,
+                        fontSize: '12px',
+                        color: '#444',
+                        letterSpacing: '0.04em',
+                        lineHeight: 1.2,
+                        padding: '0 16px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                    }}
+                    title={`Employee ID: ${details.employeeId}`}
+                >
+                    {`Employee ID: ${details.employeeId}`}
+                </div>
+
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '346px',
+                        width: '100%',
+                        textAlign: 'center',
+                        fontFamily: 'Barlow, sans-serif',
+                        fontWeight: 700,
+                        fontSize: '12px',
+                        color: '#fff',
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                    }}
+                >
+                    ZONG FUEL LOGISTICS PROJECT
+                </div>
+
+                <div
+                    style={{
+                        position: 'absolute',
+                        bottom: '14px',
+                        left: '18px',
+                        width: '62px',
+                        height: '62px',
+                        background: '#fff',
+                        padding: '4px',
+                        borderRadius: '4px',
+                        lineHeight: 0,
+                        boxSizing: 'border-box',
+                    }}
+                >
+                    <QRCodeSVG value={qrValue} size={54} level="H" includeMargin={false} bgColor="transparent" />
+                </div>
+
+                <FrontSignatureBlock signatureUrl={signatureUrl} />
             </div>
-
-            {/* ── Bottom bar ── */}
-            <div className="bg-black relative z-10" style={{ height: 5 }} />
         </div>
     );
 };
 
 // ─── Back Side ─────────────────────────────────────────────────────
 
-const CardBack = ({ employee, verifyUrl }) => {
-    const isDriver = employee.designation === 'driver';
-    const microtext = `F1RS-${employee.employeeId || 'UNKNOWN'}-${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12)}`;
+const CardBack = ({ employee }) => {
+    const details = getCardDetails(employee);
+    const fields = [
+        { label: 'Father Name', value: details.fatherName },
+        { label: 'CNIC', value: details.cnic },
+        { label: 'License', value: details.license },
+        { label: 'Blood Group', value: details.bloodGroup },
+        { label: 'Emergency Contact', value: EMERGENCY_CONTACT },
+    ];
 
     return (
-        <div
-            className="relative bg-white border-[3px] border-black overflow-hidden flex flex-col"
-            style={{ width: CARD_W, height: CARD_H }}
-        >
-            <WatermarkPattern />
+        <div style={baseCardStyle}>
+            <CardBackBg
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                }}
+            />
 
-            {/* ── Dark header ── */}
-            <div className="bg-gray-900 text-center border-b-[3px] border-black relative z-10" style={{ padding: '4px 0' }}>
-                <span className="text-white font-black uppercase" style={{ fontSize: 6, letterSpacing: 3 }}>Verification Card</span>
-            </div>
-
-            {/* ── Content ── */}
-            <div className="flex-1 flex items-center px-4 py-2 relative z-10" style={{ gap: 16 }}>
-                {/* QR Code */}
-                <div className="shrink-0 flex flex-col items-center">
-                    <div className="border-[2px] border-black p-1.5 bg-white" style={{ lineHeight: 0 }}>
-                        <QRCodeSVG value={verifyUrl} size={80} level="H" includeMargin={false} />
-                    </div>
-                    <span className="text-gray-400 font-bold uppercase mt-1 text-center" style={{ fontSize: 4, letterSpacing: 1 }}>
-                        Scan to verify
-                    </span>
-                </div>
-
-                {/* Details */}
-                <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                    {/* Phone */}
-                    <div className="bg-gray-50 border border-black px-2 py-1.5">
-                        <div className="text-gray-400 font-bold uppercase" style={{ fontSize: 4, letterSpacing: 1 }}>Phone</div>
-                        <div className="font-mono font-bold text-gray-800" style={{ fontSize: 8 }}>{employee.phone || '—'}</div>
-                    </div>
-
-                    {/* License — driver only */}
-                    {isDriver && employee.licenseNo && employee.licenseNo !== 'N/A' && (
-                        <div className="bg-yellow-50 border border-black px-2 py-1.5">
-                            <div className="text-yellow-600 font-bold uppercase" style={{ fontSize: 4, letterSpacing: 1 }}>Driving License</div>
-                            <div className="font-mono font-bold text-gray-800" style={{ fontSize: 8 }}>{employee.licenseNo}</div>
+            <div style={{ position: 'absolute', inset: 0 }}>
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '96px',
+                        left: '22px',
+                        right: '22px',
+                    }}
+                >
+                    {fields.map((field) => (
+                        <div key={field.label} style={{ marginBottom: '11px' }}>
+                            <div
+                                style={{
+                                    fontFamily: 'Barlow, sans-serif',
+                                    fontWeight: 700,
+                                    fontSize: '11px',
+                                    color: '#1a1a1a',
+                                    lineHeight: 1.2,
+                                }}
+                            >
+                                {field.label}:
+                            </div>
+                            <div
+                                style={{
+                                    marginTop: '1px',
+                                    fontFamily: 'Barlow, sans-serif',
+                                    fontWeight: 400,
+                                    fontSize: '12px',
+                                    color: '#333',
+                                    lineHeight: 1.2,
+                                    wordBreak: 'break-word',
+                                }}
+                            >
+                                {field.value}
+                            </div>
                         </div>
-                    )}
+                    ))}
                 </div>
-            </div>
 
-            {/* ── Red footer ── */}
-            <div className="bg-[#E10600] text-center border-t-[3px] border-black relative z-10" style={{ padding: '3px 0' }}>
-                <div className="text-white font-bold uppercase" style={{ fontSize: 5, letterSpacing: 2 }}>
-                    Property of Formula One Telecom Logistics
-                </div>
-                <div className="text-red-200" style={{ fontSize: 4 }}>
-                    If found, please return to the nearest office
-                </div>
-            </div>
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '310px',
+                        left: '22px',
+                        right: '22px',
+                        borderTop: '0.5px solid rgba(0,0,0,0.12)',
+                    }}
+                />
 
-            {/* ── Microtext ── */}
-            <div className="absolute bottom-0.5 left-0 right-0 text-center z-10">
-                <span className="text-gray-300 font-mono" style={{ fontSize: 3 }}>{microtext}</span>
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '322px',
+                        left: 0,
+                        right: 0,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '16px',
+                    }}
+                >
+                    {Array.from({ length: 3 }).map((_, index) => (
+                        <div
+                            key={`stamp-${index}`}
+                            style={{
+                                width: '50px',
+                                height: '50px',
+                                borderRadius: '999px',
+                                background: 'conic-gradient(from 0deg,#e8d5ff,#d5e8ff,#d5ffd8,#ffe8d5,#ffd5e8,#d5d5ff,#e8d5ff)',
+                                border: '1px solid rgba(180,180,180,0.5)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            <img
+                                src={logoAsset}
+                                alt="Formula One"
+                                style={{ width: '24px', height: '24px', objectFit: 'contain', opacity: 0.9 }}
+                            />
+                        </div>
+                    ))}
+                </div>
+
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: '18px',
+                        right: '18px',
+                        bottom: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                    }}
+                >
+                    <div
+                        style={{
+                            marginBottom: '6px',
+                        }}
+                    >
+                        <img
+                            src={logoAsset}
+                            alt="Formula One"
+                            style={{
+                                width: '132px',
+                                height: '40px',
+                                objectFit: 'contain',
+                            }}
+                        />
+                    </div>
+
+                    <div
+                        style={{
+                            fontFamily: 'Barlow, sans-serif',
+                            fontWeight: 400,
+                            fontSize: '9.5px',
+                            color: '#000',
+                            lineHeight: 1.55,
+                            textAlign: 'center',
+                        }}
+                    >
+                        {ADDRESS_LINES.map((line) => (
+                            <div key={line}>{line}</div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -190,12 +392,10 @@ const CardBack = ({ employee, verifyUrl }) => {
 
 // ─── Combined Export ───────────────────────────────────────────────
 
-export const EmployeeCard = ({ employee, side = 'front' }) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const verifyUrl = `${origin}/verify/${employee.employeeId || employee.id}`;
+export const EmployeeCard = ({ employee, side = 'front', signatureUrl = '' }) => {
 
     if (side === 'back') {
-        return <CardBack employee={employee} verifyUrl={verifyUrl} />;
+        return <CardBack employee={employee} />;
     }
-    return <CardFront employee={employee} />;
+    return <CardFront employee={employee} signatureUrl={signatureUrl} />;
 };

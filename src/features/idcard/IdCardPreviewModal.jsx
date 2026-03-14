@@ -6,7 +6,7 @@
  * Button is role-guarded: only ADMIN + SUPER_ADMIN can see it.
  * Fetches authority config to pass signatureUrl to the PDF generator.
  */
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { X, RotateCcw, Download, Loader } from 'lucide-react';
 import { EmployeeCard } from './EmployeeCard';
 import { useAuth } from '../../hooks/useAuth';
@@ -18,6 +18,8 @@ export const IdCardPreviewModal = ({ employee, onClose }) => {
     const canDownloadPdf = hasPermission(role, 'employees:write');
     const [generating, setGenerating] = useState(false);
     const [authorityConfig, setAuthorityConfig] = useState(null);
+    const frontCardRef = useRef(null);
+    const backCardRef = useRef(null);
 
     // Fetch authority config for signature
     useEffect(() => {
@@ -35,6 +37,8 @@ export const IdCardPreviewModal = ({ employee, onClose }) => {
             const { generateIdCardPdf } = await import('./generateIdCardPdf');
             await generateIdCardPdf(employee, {
                 signatureUrl: authorityConfig?.signatureUrl || null,
+                frontRef: frontCardRef,
+                backRef: backCardRef,
             });
         } catch (err) {
             console.error('[IdCard] PDF generation failed:', err);
@@ -97,7 +101,13 @@ export const IdCardPreviewModal = ({ employee, onClose }) => {
                         <div className="text-[10px] font-black text-gray-400 uppercase tracking-[3px] mb-2">
                             Front
                         </div>
-                        <EmployeeCard employee={employee} side="front" />
+                        <div ref={frontCardRef}>
+                            <EmployeeCard
+                                employee={employee}
+                                side="front"
+                                signatureUrl={authorityConfig?.signatureUrl || ''}
+                            />
+                        </div>
                     </div>
                     <div className="hidden lg:flex items-center text-gray-300">
                         <RotateCcw size={20} />
@@ -106,14 +116,16 @@ export const IdCardPreviewModal = ({ employee, onClose }) => {
                         <div className="text-[10px] font-black text-gray-400 uppercase tracking-[3px] mb-2">
                             Back
                         </div>
-                        <EmployeeCard employee={employee} side="back" />
+                        <div ref={backCardRef}>
+                            <EmployeeCard employee={employee} side="back" />
+                        </div>
                     </div>
                 </div>
 
                 {/* ── Footer ── */}
                 <div className="mt-4 text-center">
                     <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">
-                        CR80 · 85.6 × 53.98 mm · Vector PDF · Print Ready
+                        CR80 · 54 × 85.6 mm · Portrait · 300 DPI · Print Ready
                     </p>
                 </div>
             </div>
