@@ -1,7 +1,7 @@
-import React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { User } from 'lucide-react';
 import logoAsset from '../../assets/logo.png';
+import towerImage from '../../assets/tower.png';
 import CardFrontBg from '../../assets/card_front_bg.svg?react';
 import CardBackBg from '../../assets/card_back_bg.svg?react';
 import {
@@ -10,6 +10,8 @@ import {
     buildIdCardQrPayload,
     getCardDetails,
 } from './idCardConstants';
+
+// ─── Shared ────────────────────────────────────────────────────────
 
 const baseCardStyle = {
     position: 'relative',
@@ -21,26 +23,24 @@ const baseCardStyle = {
     fontFamily: 'Barlow, sans-serif',
 };
 
+// ─── Front Signature ───────────────────────────────────────────────
+
 const FrontSignatureBlock = () => (
     <div
         style={{
-            position: 'absolute',
-            right: '18px',
-            bottom: '14px',
-            width: '110px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
+            gap: '4px',
         }}
     >
         <div
             style={{
-                fontFamily: 'Dancing Script, cursive',
+                fontFamily: 'monospace, cursive',
                 fontWeight: 600,
-                fontSize: '26px',
+                fontSize: '18px',
                 color: '#2a2a2a',
                 lineHeight: 1,
-                marginBottom: '4px',
             }}
         >
             Formula One
@@ -48,7 +48,6 @@ const FrontSignatureBlock = () => (
         <div style={{ width: '90px', borderTop: '1px solid #ccc' }} />
         <div
             style={{
-                marginTop: '4px',
                 fontFamily: 'Barlow, sans-serif',
                 fontWeight: 400,
                 fontSize: '9px',
@@ -64,12 +63,13 @@ const FrontSignatureBlock = () => (
 
 // ─── Front Side ────────────────────────────────────────────────────
 
-const CardFront = ({ employee, signatureUrl }) => {
+const CardFront = ({ employee }) => {
     const details = getCardDetails(employee);
     const qrValue = buildIdCardQrPayload(employee);
 
     return (
         <div style={baseCardStyle}>
+            {/* Background SVG */}
             <CardFrontBg
                 style={{
                     position: 'absolute',
@@ -81,40 +81,41 @@ const CardFront = ({ employee, signatureUrl }) => {
                 }}
             />
 
-            <div style={{ position: 'absolute', inset: 0 }}>
-                <div
+            {/* Card Content — flex column */}
+            <div
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    padding: '20px 18px 14px',
+                }}
+            >
+                {/* Logo */}
+                <img
+                    src={logoAsset}
+                    alt="Formula One"
                     style={{
-                        position: 'absolute',
-                        top: '20px',
-                        left: 0,
-                        right: 0,
-                        textAlign: 'center',
+                        width: '150px',
+                        height: '46px',
+                        objectFit: 'contain',
+                        flexShrink: 0,
                     }}
-                >
-                    <img
-                        src={logoAsset}
-                        alt="Formula One"
-                        style={{
-                            width: '150px',
-                            height: '46px',
-                            objectFit: 'contain',
-                            margin: '0 auto',
-                        }}
-                    />
-                </div>
+                />
+
+                {/* Photo */}
                 <div
                     style={{
-                        position: 'absolute',
-                        top: '68px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
+                        marginTop: '14px',
                         width: '148px',
                         height: '162px',
                         borderRadius: '9px',
                         border: '3px solid #fff',
                         boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
                         overflow: 'hidden',
-                        background: '#ffffff',
+                        background: '#f0f0f0',
+                        flexShrink: 0,
                     }}
                 >
                     {details.photoUrl ? (
@@ -124,112 +125,129 @@ const CardFront = ({ employee, signatureUrl }) => {
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                     ) : (
-                        <div className="h-full w-full flex items-center justify-center text-[#B8B8B8] bg-white">
+                        <div
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#B8B8B8',
+                                background: '#fff',
+                            }}
+                        >
                             <User size={52} strokeWidth={1.5} />
                         </div>
                     )}
                 </div>
 
+                {/* Name / Designation / Employee ID */}
                 <div
                     style={{
-                        position: 'absolute',
-                        top: '244px',
+                        marginTop: '14px',
                         width: '100%',
-                        textAlign: 'center',
-                        fontFamily: 'Barlow, sans-serif',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '3px',
+                    }}
+                >
+                    <div
+                        style={{
+                            fontWeight: 700,
+                            fontSize: '20px',
+                            color: '#1a1a1a',
+                            lineHeight: 1.2,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '100%',
+                        }}
+                        title={details.name}
+                    >
+                        {details.name}
+                    </div>
+
+                    <div
+                        style={{
+                            fontStyle: 'italic',
+                            fontWeight: 400,
+                            fontSize: '15px',
+                            color: '#666',
+                            lineHeight: 1.2,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '100%',
+                        }}
+                        title={details.designation}
+                    >
+                        {details.designation}
+                    </div>
+
+                    <div
+                        style={{
+                            fontWeight: 600,
+                            fontSize: '14px',
+                            color: '#444',
+                            letterSpacing: '0.04em',
+                            lineHeight: 1.2,
+                        }}
+                    >
+                        Employee ID: {details.employeeId}
+                    </div>
+                </div>
+
+                {/* Project Banner */}
+                <div
+                    style={{
+                        marginTop: '14px',
+                        padding: '6px 18px',
                         fontWeight: 700,
-                        fontSize: '20px',
-                        color: '#1a1a1a',
-                        lineHeight: 1.2,
-                        padding: '0 16px',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                    }}
-                    title={details.name}
-                >
-                    {details.name}
-                </div>
-
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: '268px',
-                        width: '100%',
-                        textAlign: 'center',
-                        fontFamily: 'Barlow, sans-serif',
-                        fontStyle: 'italic',
-                        fontWeight: 400,
-                        fontSize: '13px',
-                        color: '#666',
-                        lineHeight: 1.2,
-                        padding: '0 16px',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                    }}
-                    title={details.designation}
-                >
-                    {details.designation}
-                </div>
-
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: '287px',
-                        width: '100%',
-                        textAlign: 'center',
-                        fontFamily: 'Barlow, sans-serif',
-                        fontWeight: 600,
-                        fontSize: '12px',
-                        color: '#444',
-                        letterSpacing: '0.04em',
-                        lineHeight: 1.2,
-                        padding: '0 16px',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                    }}
-                    title={`Employee ID: ${details.employeeId}`}
-                >
-                    {`Employee ID: ${details.employeeId}`}
-                </div>
-
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: '346px',
-                        width: '100%',
-                        textAlign: 'center',
-                        fontFamily: 'Barlow, sans-serif',
-                        fontWeight: 700,
-                        fontSize: '12px',
+                        fontSize: '11px',
                         color: '#fff',
                         letterSpacing: '0.08em',
                         textTransform: 'uppercase',
+                        background: 'linear-gradient(135deg, #ff3b4d, #d91e36)',
+                        borderRadius: '6px',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                        flexShrink: 0,
                     }}
                 >
                     ZONG FUEL LOGISTICS PROJECT
                 </div>
 
+                {/* QR + Signature row — pushed to bottom */}
                 <div
                     style={{
-                        position: 'absolute',
-                        bottom: '14px',
-                        left: '18px',
-                        width: '62px',
-                        height: '62px',
-                        background: '#fff',
-                        padding: '4px',
-                        borderRadius: '4px',
-                        lineHeight: 0,
-                        boxSizing: 'border-box',
+                        marginTop: 'auto',
+                        width: '100%',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-end',
                     }}
                 >
-                    <QRCodeSVG value={qrValue} size={54} level="H" includeMargin={false} bgColor="transparent" />
-                </div>
+                    {/* QR Code */}
+                    <div
+                        style={{
+                            background: '#fff',
+                            padding: '4px',
+                            borderRadius: '4px',
+                            lineHeight: 0,
+                        }}
+                    >
+                        <QRCodeCanvas
+                            value={qrValue}
+                            size={54}
+                            level="H"
+                            includeMargin={false}
+                            bgColor="transparent"
+                        />
+                    </div>
 
-                <FrontSignatureBlock signatureUrl={signatureUrl} />
+                    {/* Signature */}
+                    <FrontSignatureBlock />
+                </div>
             </div>
         </div>
     );
@@ -249,6 +267,7 @@ const CardBack = ({ employee }) => {
 
     return (
         <div style={baseCardStyle}>
+            {/* Background SVG */}
             <CardBackBg
                 style={{
                     position: 'absolute',
@@ -260,123 +279,143 @@ const CardBack = ({ employee }) => {
                 }}
             />
 
-            <div style={{ position: 'absolute', inset: 0 }}>
+            {/* Tower Watermark — right side, like the reference image */}
+            <div
+                style={{
+                    position: "absolute",
+                    top: '47px',
+                    right: '36%',
+                    width: '45%',
+                    height: '65%',
+                    opacity: 0.3,
+                    pointerEvents: 'none',
+                    overflow: 'hidden',
+                }}
+            >
+                <img
+                    src={towerImage}
+                    alt=""
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        objectPosition: 'right',
+                        filter: 'grayscale(100%)',
+                    }}
+                />
+            </div>
+
+            {/* Card Content — flex column */}
+            <div
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}
+            >
+                {/* "Personal Details" Red Header Banner */}
                 <div
                     style={{
-                        position: 'absolute',
-                        top: '96px',
-                        left: '22px',
-                        right: '22px',
+                        background: 'linear-gradient(135deg, #ff3b4d, #d91e36)',
+                        padding: '10px 22px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                    }}
+                >
+                    <span
+                        style={{
+                            fontFamily: 'Barlow, sans-serif',
+                            fontWeight: 700,
+                            fontSize: '14px',
+                            color: '#fff',
+                            letterSpacing: '0.06em',
+                            textTransform: 'uppercase',
+                        }}
+                    >
+                        Personal Details
+                    </span>
+                </div>
+
+                {/* Fields */}
+                <div
+                    style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'flex-start',
+                        padding: '14px 22px 10px',
+                        gap: '10px',
                     }}
                 >
                     {fields.map((field) => (
-                        <div key={field.label} style={{ marginBottom: '11px' }}>
-                            <div
+                        <div key={field.label} style={{ display: 'flex', flexDirection: 'column', gap: '1px', alignItems: 'flex-start' }}>
+                            <span
                                 style={{
                                     fontFamily: 'Barlow, sans-serif',
                                     fontWeight: 700,
-                                    fontSize: '11px',
+                                    fontSize: '16px',
                                     color: '#1a1a1a',
-                                    lineHeight: 1.2,
+                                    lineHeight: 1.3,
                                 }}
                             >
                                 {field.label}:
-                            </div>
-                            <div
+                            </span>
+                            <span
                                 style={{
-                                    marginTop: '1px',
                                     fontFamily: 'Barlow, sans-serif',
                                     fontWeight: 400,
-                                    fontSize: '12px',
+                                    fontSize: '17px',
                                     color: '#333',
-                                    lineHeight: 1.2,
+                                    lineHeight: 1.3,
                                     wordBreak: 'break-word',
                                 }}
                             >
                                 {field.value}
-                            </div>
+                            </span>
                         </div>
                     ))}
                 </div>
 
+                {/* Divider */}
                 <div
                     style={{
-                        position: 'absolute',
-                        top: '310px',
-                        left: '22px',
-                        right: '22px',
-                        borderTop: '0.5px solid rgba(0,0,0,0.12)',
+                        margin: '0 22px',
+                        borderTop: '0.5px solid rgba(0,0,0,0.15)',
+                        flexShrink: 0,
                     }}
                 />
 
+                {/* Logo + Address footer */}
                 <div
                     style={{
-                        position: 'absolute',
-                        top: '322px',
-                        left: 0,
-                        right: 0,
-                        display: 'flex',
-                        justifyContent: 'center',
-                        gap: '16px',
-                    }}
-                >
-                    {Array.from({ length: 3 }).map((_, index) => (
-                        <div
-                            key={`stamp-${index}`}
-                            style={{
-                                width: '50px',
-                                height: '50px',
-                                borderRadius: '999px',
-                                background: 'conic-gradient(from 0deg,#e8d5ff,#d5e8ff,#d5ffd8,#ffe8d5,#ffd5e8,#d5d5ff,#e8d5ff)',
-                                border: '1px solid rgba(180,180,180,0.5)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        >
-                            <img
-                                src={logoAsset}
-                                alt="Formula One"
-                                style={{ width: '24px', height: '24px', objectFit: 'contain', opacity: 0.9 }}
-                            />
-                        </div>
-                    ))}
-                </div>
-
-                <div
-                    style={{
-                        position: 'absolute',
-                        left: '18px',
-                        right: '18px',
-                        bottom: '16px',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
+                        padding: '10px 18px 14px',
+                        gap: '6px',
+                        flexShrink: 0,
                     }}
                 >
-                    <div
+                    <img
+                        src={logoAsset}
+                        alt="Formula One"
                         style={{
-                            marginBottom: '6px',
+                            width: '120px',
+                            height: '36px',
+                            objectFit: 'contain',
                         }}
-                    >
-                        <img
-                            src={logoAsset}
-                            alt="Formula One"
-                            style={{
-                                width: '132px',
-                                height: '40px',
-                                objectFit: 'contain',
-                            }}
-                        />
-                    </div>
-
+                    />
                     <div
                         style={{
                             fontFamily: 'Barlow, sans-serif',
-                            fontWeight: 400,
-                            fontSize: '9.5px',
-                            color: '#000',
-                            lineHeight: 1.55,
+                            fontWeight: 700,
+                            fontSize: '12px',
+                            color: '#333',
+                            lineHeight: 1.6,
                             textAlign: 'center',
                         }}
                     >
@@ -392,10 +431,7 @@ const CardBack = ({ employee }) => {
 
 // ─── Combined Export ───────────────────────────────────────────────
 
-export const EmployeeCard = ({ employee, side = 'front', signatureUrl = '' }) => {
-
-    if (side === 'back') {
-        return <CardBack employee={employee} />;
-    }
-    return <CardFront employee={employee} signatureUrl={signatureUrl} />;
+export const EmployeeCard = ({ employee, side = 'front' }) => {
+    if (side === 'back') return <CardBack employee={employee} />;
+    return <CardFront employee={employee} />;
 };
