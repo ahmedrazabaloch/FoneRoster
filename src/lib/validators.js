@@ -32,6 +32,7 @@ export const employeeSchema = z.object({
     whatsapp: pakistaniMobile,
     cnic: cnicFormat,
     licenseNo: z.string().nullable().optional(),
+    bloodGroup: z.enum(['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']).optional().default(''),
     onLeave: z.boolean().default(false),
     sameAsPhone: z.boolean().optional(),
     availability: z.object({

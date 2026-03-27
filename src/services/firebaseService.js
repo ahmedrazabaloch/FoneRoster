@@ -39,7 +39,7 @@ import { sanitizeEmployeeData } from '../utils/sanitizeInput';
 /** Fields allowed in user document writes — whitelist prevents schema pollution */
 const EMPLOYEE_ALLOWED_FIELDS = [
     'employeeId', 'name', 'fatherName', 'designation', 'roleType',
-    'phone', 'whatsapp', 'cnic', 'licenseNo', 'onLeave', 'availability',
+    'phone', 'whatsapp', 'cnic', 'licenseNo', 'bloodGroup', 'onLeave', 'availability',
     'isDeleted', 'createdAt', 'updatedAt', 'deletedAt', 'deletedBy',
     'photoUrl',
 ];

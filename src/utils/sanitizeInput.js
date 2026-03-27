@@ -330,6 +330,7 @@ const EMPLOYEE_FIELD_OPTIONS = {
     whatsapp: { maxLength: 15 },
     cnic: { maxLength: 15 },
     licenseNo: { maxLength: 30 },
+    bloodGroup: { maxLength: 5 },
     photoUrl: { maxLength: 500 },
 };
 

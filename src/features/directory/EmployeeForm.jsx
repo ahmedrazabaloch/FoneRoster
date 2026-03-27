@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Save, FileText, Hash, Camera, X, Loader } from 'lucide-react';
+import { Plus, Save, FileText, Hash, Camera, X, Loader, Droplet } from 'lucide-react';
 import { toast } from 'sonner';
 import { employeeSchema } from '../../lib/validators';
 import { formatCnic } from '../../utils/formatters';
@@ -42,6 +42,7 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
             whatsapp: '',
             cnic: '',
             licenseNo: '',
+            bloodGroup: '',
             onLeave: false,
             sameAsPhone: false,
             availability: { day: true, night: false },
@@ -77,6 +78,7 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
                 whatsapp: editingEmployee.whatsapp || '',
                 cnic: editingEmployee.cnic || '',
                 licenseNo: editingEmployee.licenseNo || '',
+                bloodGroup: editingEmployee.bloodGroup || '',
                 onLeave: editingEmployee.onLeave || false,
                 sameAsPhone: editingEmployee.phone === editingEmployee.whatsapp,
                 availability: editingEmployee.availability || { day: true, night: false },
@@ -93,6 +95,7 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
                 whatsapp: '',
                 cnic: '',
                 licenseNo: '',
+                bloodGroup: '',
                 onLeave: false,
                 sameAsPhone: false,
                 availability: { day: true, night: false },
@@ -337,6 +340,32 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
                             <p className="text-xs text-red-600 font-bold mt-1">{errors.cnic.message}</p>
                         )}
                     </div>
+                </div>
+
+                {/* ── Blood Group ── */}
+                <div className="w-full md:w-1/2">
+                    <label className="block text-xs font-bold uppercase mb-1 text-gray-700 flex items-center gap-1">
+                        <Droplet size={11} />
+                        Blood Group
+                    </label>
+                    <select
+                        {...register('bloodGroup')}
+                        style={{ minHeight: 44 }}
+                        className={`${fieldClass}${errors.bloodGroup ? errorClass : ''}`}
+                    >
+                        <option value="">Select Blood Group</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A−</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B−</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB−</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O−</option>
+                    </select>
+                    {errors.bloodGroup && (
+                        <p className="text-xs text-red-600 font-bold mt-1">{errors.bloodGroup.message}</p>
+                    )}
                 </div>
 
                 <input type="hidden" {...register('roleType')} />
