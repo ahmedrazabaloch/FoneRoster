@@ -69,7 +69,32 @@ export function getBloodGroupValue(employee) {
     return employee?.bloodGroup || employee?.blood_group || employee?.blood || '-';
 }
 
+export function validatePhotoPosition(raw) {
+    let parsed = raw;
+    if (typeof parsed === 'string') {
+        try {
+            parsed = JSON.parse(parsed);
+        } catch (e) {
+            parsed = null;
+        }
+    }
+
+    const safeNum = (val, min, max, def) => {
+        const num = Number(val);
+        if (isNaN(num)) return def;
+        return Math.max(min, Math.min(max, num));
+    };
+
+    return {
+        x: safeNum(parsed?.x, 0, 100, 50),
+        y: safeNum(parsed?.y, 0, 100, 50),
+        scale: safeNum(parsed?.scale, 0.5, 2.0, 1),
+    };
+}
+
 export function getCardDetails(employee) {
+    const photoPosition = validatePhotoPosition(employee?.photoPosition);
+
     return {
         name: employee?.name || '-',
         designation: getDesignationLabel(employee?.designation),
@@ -81,6 +106,9 @@ export function getCardDetails(employee) {
         bloodGroup: getBloodGroupValue(employee),
         emergencyContact: EMERGENCY_CONTACT,
         photoUrl: employee?.photoUrl || '',
+        photoPosition,
+        photoMeta: employee?.photoMeta || { w: 1, h: 1 },
+        isCropped: employee?.isCropped || false,
     };
 }
 

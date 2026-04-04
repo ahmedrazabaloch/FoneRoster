@@ -94,7 +94,6 @@ const s = StyleSheet.create({
     borderRadius: 5,
     border: "1.5pt solid #fff",
     overflow: "hidden",
-    backgroundColor: C.photoBg,
     position: "relative",
   },
 
@@ -127,7 +126,6 @@ const s = StyleSheet.create({
   },
   designationText: {
     fontFamily: "Barlow",
-    fontStyle: "italic",
     fontSize: 7.5,
     color: C.lightText,
     textAlign: "center",
@@ -272,14 +270,7 @@ const s = StyleSheet.create({
 
 // ── Front Side ────────────────────────────────────────────────────
 
-const PHOTO_W = 76;
-const PHOTO_H = 82;
-
-const CardFrontPage = ({ details, qrDataUrl, logoSrc, frontBgSrc, photoPosition }) => {
-  const px = photoPosition?.x ?? 50;
-  const py = photoPosition?.y ?? 50;
-  const ps = photoPosition?.scale ?? 1;
-
+const CardFrontPage = ({ details, qrDataUrl, logoSrc, frontBgSrc }) => {
   return (
   <Page size={[CR80_W_PT, CR80_H_PT]} style={s.page}>
     {/* Background */}
@@ -290,18 +281,14 @@ const CardFrontPage = ({ details, qrDataUrl, logoSrc, frontBgSrc, photoPosition 
       {/* Logo */}
       {logoSrc && <Image src={logoSrc} style={s.logo} />}
 
-      {/* Employee Photo */}
+      {/* Employee Photo — image is pre-cropped to exact frame size */}
       <View style={s.photoFrame}>
         {details.photoUrl ? (
           <Image
             src={details.photoUrl}
             style={{
-              position: "absolute",
-              height: `${ps * 100}%`,
-              width: "auto",
-              left: `${px}%`,
-              top: `${py}%`,
-              transform: "translate(-50%, -50%)",
+              width: "100%",
+              height: "100%",
             }}
           />
         ) : (
@@ -402,7 +389,6 @@ export const EmployeeCardPDF = ({
   logoSrc,
   frontBgSrc,
   backBgSrc,
-  photoPosition,
 }) => {
   const details = getCardDetails(employee);
 
@@ -417,7 +403,6 @@ export const EmployeeCardPDF = ({
         qrDataUrl={qrDataUrl}
         logoSrc={logoSrc}
         frontBgSrc={frontBgSrc}
-        photoPosition={photoPosition}
       />
       <CardBackPage
         details={details}

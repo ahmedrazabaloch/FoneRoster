@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Save, FileText, Hash, Camera, X, Loader, Droplet } from 'lucide-react';
@@ -8,7 +8,60 @@ import { formatCnic } from '../../utils/formatters';
 import { Input, Button, Card } from '../../components/ui';
 import { DESIGNATION_OPTIONS, ROLE_TYPE_MAP } from '../../config/designations';
 import { PhotoPositionModal } from './PhotoPositionModal';
+import { calculatePhotoFitInFrame } from '../idcard/photoFitUtils';
 
+
+// ── Canvas-based cover-fill photo thumbnail ────────────────────────
+const FormPhotoCanvas = ({ src, photoPosition, width, height }) => {
+    const canvasRef = useRef(null);
+
+    useEffect(() => {
+        if (!src) return;
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            const photoMeta = { w: img.naturalWidth, h: img.naturalHeight };
+            const fit = calculatePhotoFitInFrame(photoMeta, 76, 82, photoPosition);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+
+            const scaleX = width / 76;
+            const scaleY = height / 82;
+
+            if (fit.needsCropping) {
+                ctx.drawImage(
+                    img,
+                    fit.sourceX, fit.sourceY, fit.sourceW, fit.sourceH,
+                    0, 0, width, height,
+                );
+            } else {
+                ctx.drawImage(
+                    img,
+                    0, 0, photoMeta.w, photoMeta.h,
+                    fit.offsetX * scaleX, fit.offsetY * scaleY,
+                    fit.displayWidth * scaleX, fit.displayHeight * scaleY,
+                );
+            }
+        };
+        img.src = src;
+    }, [src, photoPosition, width, height]);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            style={{ width, height, display: 'block' }}
+        />
+    );
+};
 
 // Shared field class — consistent on every input regardless of icon/grid position
 const fieldClass =
@@ -195,20 +248,11 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
                                 }}
                             >
                                 {photoUrl ? (
-                                    <img
+                                    <FormPhotoCanvas
                                         src={photoUrl}
-                                        alt="Photo"
-                                        draggable={false}
-                                        style={{
-                                            position: 'absolute',
-                                            height: `${(photoPosition.scale || 1) * 100}%`,
-                                            width: 'auto',
-                                            left: `${photoPosition.x ?? 50}%`,
-                                            top: `${photoPosition.y ?? 50}%`,
-                                            transform: 'translate(-50%, -50%)',
-                                            pointerEvents: 'none',
-                                            userSelect: 'none',
-                                        }}
+                                        photoPosition={photoPosition}
+                                        width={96}
+                                        height={105}
                                     />
                                 ) : uploading ? (
                                     <Loader size={20} className="text-gray-400 animate-spin" />

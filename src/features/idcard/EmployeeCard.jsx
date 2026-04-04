@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { User } from "lucide-react";
 import logoAsset from "../../assets/logo.png";
@@ -10,6 +10,7 @@ import {
   buildIdCardQrPayload,
   getCardDetails,
 } from "./idCardConstants";
+import { calculatePhotoFitInFrame } from "./photoFitUtils";
 
 // ─── Shared ────────────────────────────────────────────────────────
 
@@ -21,6 +22,80 @@ const baseCardStyle = {
   overflow: "hidden",
   boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
   fontFamily: "Barlow, sans-serif",
+};
+
+// ─── Cover-Fill Photo Canvas ────────────────────────────────────────
+
+/** Renders the photo with cover-fill using a canvas, matching PDF output exactly */
+const CoverFillPhoto = ({ src, name, photoPosition }) => {
+  const canvasRef = useRef(null);
+  const DISPLAY_W = 148;
+  const DISPLAY_H = 162;
+
+  useEffect(() => {
+    if (!src) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = DISPLAY_W * dpr;
+      canvas.height = DISPLAY_H * dpr;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+
+      const photoMeta = { w: img.naturalWidth, h: img.naturalHeight };
+      // Use 76x82 (the PDF frame) for calculation, then draw at display scale
+      const fit = calculatePhotoFitInFrame(photoMeta, 76, 82, photoPosition);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, DISPLAY_W, DISPLAY_H);
+
+      if (fit.needsCropping) {
+        ctx.drawImage(
+          img,
+          fit.sourceX, fit.sourceY, fit.sourceW, fit.sourceH,
+          0, 0, DISPLAY_W, DISPLAY_H,
+        );
+      } else {
+        const scaleX = DISPLAY_W / 76;
+        const scaleY = DISPLAY_H / 82;
+        ctx.drawImage(
+          img,
+          0, 0, photoMeta.w, photoMeta.h,
+          fit.offsetX * scaleX, fit.offsetY * scaleY,
+          fit.displayWidth * scaleX, fit.displayHeight * scaleY,
+        );
+      }
+    };
+    img.src = src;
+  }, [src, photoPosition]);
+
+  if (!src) {
+    return (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#B8B8B8",
+          background: "#fff",
+        }}
+      >
+        <User size={52} strokeWidth={1.5} />
+      </div>
+    );
+  }
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ width: DISPLAY_W, height: DISPLAY_H, display: "block" }}
+    />
+  );
 };
 
 // ─── Front Signature ───────────────────────────────────────────────
@@ -63,54 +138,9 @@ const FrontSignatureBlock = () => (
 
 // ─── Front Side ────────────────────────────────────────────────────
 
-const CardFront = ({ employee, photoPosition, editable, onPhotoPositionChange }) => {
+const CardFront = ({ employee }) => {
   const details = getCardDetails(employee);
   const qrValue = buildIdCardQrPayload(employee);
-  const containerRef = useRef(null);
-
-  const pos = photoPosition || { x: 50, y: 50, scale: 1 };
-
-  const handleMouseDown = useCallback(
-    (e) => {
-      if (!editable || !details.photoUrl) return;
-      e.preventDefault();
-      const startX = e.clientX;
-      const startY = e.clientY;
-      const startPos = { ...pos };
-
-      const handleMouseMove = (ev) => {
-        const rect = containerRef.current?.getBoundingClientRect();
-        if (!rect) return;
-        const dx = ev.clientX - startX;
-        const dy = ev.clientY - startY;
-        onPhotoPositionChange?.({
-          ...startPos,
-          x: Math.max(0, Math.min(100, startPos.x + (dx / rect.width) * 100)),
-          y: Math.max(0, Math.min(100, startPos.y + (dy / rect.height) * 100)),
-        });
-      };
-
-      const handleMouseUp = () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
-      };
-
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-    },
-    [pos, editable, details.photoUrl, onPhotoPositionChange],
-  );
-
-  const handleWheel = useCallback(
-    (e) => {
-      if (!editable || !details.photoUrl) return;
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.05 : 0.05;
-      const newScale = Math.max(1, Math.min(3, (pos.scale || 1) + delta));
-      onPhotoPositionChange?.({ ...pos, scale: newScale });
-    },
-    [pos, editable, details.photoUrl, onPhotoPositionChange],
-  );
 
   return (
     <div style={baseCardStyle}>
@@ -153,9 +183,6 @@ const CardFront = ({ employee, photoPosition, editable, onPhotoPositionChange })
 
         {/* Photo */}
         <div
-          ref={containerRef}
-          onMouseDown={handleMouseDown}
-          onWheel={handleWheel}
           style={{
             marginTop: "14px",
             width: "148px",
@@ -164,43 +191,15 @@ const CardFront = ({ employee, photoPosition, editable, onPhotoPositionChange })
             border: "3px solid #fff",
             boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
             overflow: "hidden",
-            background: "#f0f0f0",
             flexShrink: 0,
             position: "relative",
-            cursor: editable && details.photoUrl ? "move" : "default",
           }}
         >
-          {details.photoUrl ? (
-            <img
-              src={details.photoUrl}
-              alt={details.name}
-              draggable={false}
-              style={{
-                position: "absolute",
-                height: `${(pos.scale || 1) * 100}%`,
-                width: "auto",
-                left: `${pos.x ?? 50}%`,
-                top: `${pos.y ?? 50}%`,
-                transform: "translate(-50%, -50%)",
-                pointerEvents: "none",
-                userSelect: "none",
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#B8B8B8",
-                background: "#fff",
-              }}
-            >
-              <User size={52} strokeWidth={1.5} />
-            </div>
-          )}
+          <CoverFillPhoto
+            src={details.photoUrl}
+            name={details.name}
+            photoPosition={details.photoPosition}
+          />
         </div>
 
         {/* Name / Designation / Employee ID */}
@@ -494,17 +493,7 @@ const CardBack = ({ employee }) => {
 export const EmployeeCard = ({
   employee,
   side = "front",
-  photoPosition,
-  editable,
-  onPhotoPositionChange,
 }) => {
   if (side === "back") return <CardBack employee={employee} />;
-  return (
-    <CardFront
-      employee={employee}
-      photoPosition={photoPosition}
-      editable={editable}
-      onPhotoPositionChange={onPhotoPositionChange}
-    />
-  );
+  return <CardFront employee={employee} />;
 };

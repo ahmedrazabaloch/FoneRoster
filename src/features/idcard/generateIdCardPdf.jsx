@@ -2,7 +2,8 @@ import React from "react";
 import { pdf } from "@react-pdf/renderer";
 import QRCode from "qrcode";
 import { EmployeeCardPDF } from "./EmployeeCardPDF";
-import { buildIdCardQrPayload } from "./idCardConstants";
+import { buildIdCardQrPayload, validatePhotoPosition } from "./idCardConstants";
+import { cropAndResizePhotoForPdf } from "./photoFitUtils";
 import logoAsset from "../../assets/logo.png";
 import CardFrontBg from "../../assets/card-front.png";
 import CardBackBg from "../../assets/card-back.png";
@@ -82,13 +83,16 @@ async function imageUrlToDataUrl(url) {
 /**
  * Generate and download an ID card PDF for the given employee.
  *
- * Pipeline:  employee data → QR data URL → <EmployeeCardPDF /> → blob → download
+ * Pipeline:
+ *   1. Fetch photo as data URL
+ *   2. Crop/resize to exact 76×82pt frame via canvas (cover-fill model)
+ *   3. Pass already-cropped image to EmployeeCardPDF — rendering is trivial
+ *   4. Generate PDF blob → download
  *
  * No DOM refs, no html2canvas, no rasterization.
  * Fully deterministic output.
  */
-export async function generateIdCardPdf(employee, options = {}) {
-  const { photoPosition } = options;
+export async function generateIdCardPdf(employee) {
   // 1. Prepare assets concurrently
   const [qrDataUrl, photoDataUrl] = await Promise.all([
     generateQrDataUrl(employee),
@@ -100,10 +104,21 @@ export async function generateIdCardPdf(employee, options = {}) {
   const frontBgSrc = toAbsoluteUrl(CardFrontBg);
   const backBgSrc = toAbsoluteUrl(CardBackBg);
 
-  // Patch photoUrl with the fetched data URL (avoids CORS in PDF context)
+  // 2. Crop photo to exact frame size using cover-fill model
+  const validPosition = validatePhotoPosition(employee?.photoPosition);
+  const croppedPhotoUrl = await cropAndResizePhotoForPdf(
+    photoDataUrl,
+    validPosition,
+    76,  // frameW
+    82,  // frameH
+    4,   // exportScale for high-res PDF
+  );
+
+  // 3. Build employee data for PDF — image is pre-cropped, no math needed in renderer
   const employeeForPdf = {
     ...employee,
-    photoUrl: photoDataUrl || "",
+    photoUrl: croppedPhotoUrl || "",
+    isCropped: true,
   };
 
   const blob = await pdf(
@@ -113,11 +128,10 @@ export async function generateIdCardPdf(employee, options = {}) {
       logoSrc={logoSrc}
       frontBgSrc={frontBgSrc}
       backBgSrc={backBgSrc}
-      photoPosition={photoPosition}
     />,
   ).toBlob();
 
-  // 3. Trigger download — use employee name for filename
+  // 4. Trigger download — use employee name for filename
   const name = employee?.name || "card";
   const safeName = name
     .toLowerCase()

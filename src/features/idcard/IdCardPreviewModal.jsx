@@ -10,34 +10,21 @@ export const IdCardPreviewModal = ({ employee, onClose }) => {
   const { role } = useAuth();
   const canDownloadPdf = hasPermission(role, "employees:write");
   const [generating, setGenerating] = useState(false);
-  const [photoPosition, setPhotoPosition] = useState(
-    employee?.photoPosition || DEFAULT_PHOTO_POS,
-  );
 
   const handleDownload = useCallback(async () => {
     if (generating) return;
     setGenerating(true);
     try {
       const { generateIdCardPdf } = await import("./generateIdCardPdf.jsx");
-      await generateIdCardPdf(employee, { photoPosition });
+      await generateIdCardPdf(employee);
     } catch (err) {
       console.error("[IdCard] PDF generation failed:", err);
     } finally {
       setGenerating(false);
     }
-  }, [employee, generating, photoPosition]);
-
-  const handleResetPhoto = useCallback(() => {
-    setPhotoPosition(employee?.photoPosition || DEFAULT_PHOTO_POS);
-  }, [employee]);
+  }, [employee, generating]);
 
   if (!employee) return null;
-
-  const isPhotoAdjusted =
-    photoPosition.x !== 50 ||
-    photoPosition.y !== 50 ||
-    photoPosition.scale !== 1;
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
@@ -99,28 +86,10 @@ export const IdCardPreviewModal = ({ employee, onClose }) => {
               <EmployeeCard
                 employee={employee}
                 side="front"
-                photoPosition={photoPosition}
-                editable={true}
-                onPhotoPositionChange={setPhotoPosition}
               />
+
             </div>
-            {/* Photo position hint */}
-            {employee.photoUrl && (
-              <div className="mt-2 flex items-center justify-center gap-2">
-                <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">
-                  Drag photo to reposition · Scroll to zoom
-                </span>
-                {isPhotoAdjusted && (
-                  <button
-                    onClick={handleResetPhoto}
-                    className="text-[9px] text-red-500 font-black uppercase tracking-wider hover:underline flex items-center gap-1"
-                    title="Reset photo position"
-                  >
-                    <RotateCw size={10} /> Reset
-                  </button>
-                )}
-              </div>
-            )}
+
           </div>
           <div className="hidden lg:flex items-center text-gray-300">
             <RotateCcw size={20} />
