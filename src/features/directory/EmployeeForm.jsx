@@ -7,6 +7,7 @@ import { employeeSchema } from '../../lib/validators';
 import { formatCnic } from '../../utils/formatters';
 import { Input, Button, Card } from '../../components/ui';
 import { DESIGNATION_OPTIONS, ROLE_TYPE_MAP } from '../../config/designations';
+import { PhotoPositionModal } from './PhotoPositionModal';
 
 
 // Shared field class — consistent on every input regardless of icon/grid position
@@ -19,6 +20,8 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
     const [photoUrl, setPhotoUrl] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState(null);
+    const [photoPosition, setPhotoPosition] = useState({ x: 50, y: 50, scale: 1 });
+    const [showPositionModal, setShowPositionModal] = useState(false);
     const fileInputRef = useRef(null);
 
     const {
@@ -84,6 +87,7 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
                 availability: editingEmployee.availability || { day: true, night: false },
             });
             setPhotoUrl(editingEmployee.photoUrl || null);
+            setPhotoPosition(editingEmployee.photoPosition || { x: 50, y: 50, scale: 1 });
         } else {
             reset({
                 employeeId: nextEmployeeId || '',
@@ -101,6 +105,7 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
                 availability: { day: true, night: false },
             });
             setPhotoUrl(null);
+            setPhotoPosition({ x: 50, y: 50, scale: 1 });
             setUploadError(null);
         }
     }, [editingEmployee, nextEmployeeId, reset]);
@@ -120,7 +125,9 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
             const { uploadImage } = await import('../../services/cloudinaryService');
             const url = await uploadImage(file);
             setPhotoUrl(url);
-            toast.success('Photo uploaded');
+            setPhotoPosition({ x: 50, y: 50, scale: 1 });
+            setShowPositionModal(true);
+            toast.success('Photo uploaded — position it now');
         } catch (err) {
             setUploadError(err.message);
             toast.error(err.message);
@@ -129,6 +136,7 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
             if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
+
 
     const handleFormSubmit = async (data) => {
         if (uploading) {
@@ -141,6 +149,7 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
         }
         const { sameAsPhone: _, ...cleanData } = data;
         cleanData.photoUrl = photoUrl || null;
+        cleanData.photoPosition = photoUrl ? photoPosition : null;
         setIsSubmitting(true);
         try {
             await onSubmit(cleanData);
@@ -169,60 +178,88 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
 
                 {/* ── Photo + Employee ID row ── */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Employee Photo */}
                     <div className="w-full">
                         <label className="text-xs font-bold uppercase mb-1 text-gray-700 flex items-center gap-1">
                             <Camera size={11} />
                             Employee Photo
                         </label>
-                        <div className="flex items-center gap-3">
-                            {/* Preview */}
+                        <div className="flex items-start gap-3">
+                            {/* Photo preview — static, shows current position */}
                             <div
                                 className={`border-2 border-black bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 ${uploading ? 'animate-pulse' : ''}`}
-                                style={{ width: 64, height: 64 }}
+                                style={{
+                                    width: 96,
+                                    height: 105,
+                                    position: 'relative',
+                                    borderRadius: 4,
+                                }}
                             >
                                 {photoUrl ? (
-                                    <img src={photoUrl} alt="Photo" className="w-full h-full object-cover" />
-                            ) : uploading ? (
-                                <Loader size={20} className="text-gray-400 animate-spin" />
-                            ) : (
-                                <Camera size={20} className="text-gray-400" />
-                            )}
-                        </div>
-                        {/* Controls */}
-                        <div className="flex flex-col gap-1 flex-1">
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                onChange={handlePhotoSelect}
-                                className="hidden"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={uploading || isSubmitting}
-                                className="text-xs font-bold uppercase px-3 py-1.5 border-2 border-black bg-blue-500 text-white shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
-                            >
-                                {photoUrl ? 'Replace' : 'Upload'}
-                            </button>
-                            {photoUrl && (
+                                    <img
+                                        src={photoUrl}
+                                        alt="Photo"
+                                        draggable={false}
+                                        style={{
+                                            position: 'absolute',
+                                            height: `${(photoPosition.scale || 1) * 100}%`,
+                                            width: 'auto',
+                                            left: `${photoPosition.x ?? 50}%`,
+                                            top: `${photoPosition.y ?? 50}%`,
+                                            transform: 'translate(-50%, -50%)',
+                                            pointerEvents: 'none',
+                                            userSelect: 'none',
+                                        }}
+                                    />
+                                ) : uploading ? (
+                                    <Loader size={20} className="text-gray-400 animate-spin" />
+                                ) : (
+                                    <Camera size={20} className="text-gray-400" />
+                                )}
+                            </div>
+                            {/* Controls */}
+                            <div className="flex flex-col gap-1 flex-1">
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    onChange={handlePhotoSelect}
+                                    className="hidden"
+                                />
                                 <button
                                     type="button"
-                                    onClick={() => { setPhotoUrl(null); setUploadError(null); }}
+                                    onClick={() => fileInputRef.current?.click()}
                                     disabled={uploading || isSubmitting}
-                                    className="text-xs font-bold uppercase px-3 py-1 text-red-600 hover:underline"
+                                    className="text-xs font-bold uppercase px-3 py-1.5 border-2 border-black bg-blue-500 text-white shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
                                 >
-                                    Remove
+                                    {photoUrl ? 'Replace' : 'Upload'}
                                 </button>
-                            )}
+                                {photoUrl && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPositionModal(true)}
+                                            disabled={uploading || isSubmitting}
+                                            className="text-xs font-bold uppercase px-3 py-1.5 border-2 border-black bg-gray-800 text-white shadow-brutal-sm hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
+                                        >
+                                            Reposition
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setPhotoUrl(null); setPhotoPosition({ x: 50, y: 50, scale: 1 }); setUploadError(null); }}
+                                            disabled={uploading || isSubmitting}
+                                            className="text-xs font-bold uppercase px-3 py-1 text-red-600 hover:underline"
+                                        >
+                                            Remove
+                                        </button>
+                                    </>
+                                )}
+                            </div>
                         </div>
+                        {uploadError && (
+                            <p className="text-xs text-red-600 font-bold mt-1">{uploadError}</p>
+                        )}
+                        <p className="text-[10px] text-gray-400 mt-1">JPEG, PNG, WebP · Max 2MB</p>
                     </div>
-                    {uploadError && (
-                        <p className="text-xs text-red-600 font-bold mt-1">{uploadError}</p>
-                    )}
-                    <p className="text-[10px] text-gray-400 mt-1">JPEG, PNG, WebP · Max 2MB · Auto-cropped to square</p>
-                </div>
 
                     {/* Employee ID - in same grid */}
                     <div className="w-full">
@@ -473,6 +510,17 @@ export const EmployeeForm = ({ onSubmit, editingEmployee, onCancel, nextEmployee
                     )}
                 </div>
             </form>
+            {showPositionModal && photoUrl && (
+                <PhotoPositionModal
+                    imageUrl={photoUrl}
+                    initialPosition={photoPosition}
+                    onSave={(pos) => {
+                        setPhotoPosition(pos);
+                        setShowPositionModal(false);
+                    }}
+                    onCancel={() => setShowPositionModal(false)}
+                />
+            )}
         </Card>
     );
 };

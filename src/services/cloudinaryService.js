@@ -3,8 +3,7 @@
  *
  * Accepts: image/jpeg, image/png, image/webp only
  * Max file size: 2MB
- * Client-side resize: max 600px height
- * Client-side crop: 1:1 square (center crop)
+ * Client-side resize: max 800px on longest side (preserves aspect ratio)
  *
  * Uses Cloudinary unsigned upload preset — no API secret exposed.
  */
@@ -15,12 +14,11 @@ const UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-const MAX_HEIGHT = 600;
-
-// ─── Client-side Image Processing ──────────────────────────────────
+const MAX_SIDE = 800;
 
 /**
- * Resize and square-crop an image on a canvas.
+ * Resize an image, preserving aspect ratio.
+ * Constrains the longest side to MAX_SIDE.
  * Returns a Blob (JPEG, quality 0.85).
  */
 function processImage(file) {
@@ -31,20 +29,22 @@ function processImage(file) {
         img.onload = () => {
             URL.revokeObjectURL(url);
 
-            // Square crop: use the smaller dimension
-            const side = Math.min(img.width, img.height);
-            const sx = (img.width - side) / 2;
-            const sy = (img.height - side) / 2;
+            let { width, height } = img;
 
-            // Target size: min(side, MAX_HEIGHT)
-            const target = Math.min(side, MAX_HEIGHT);
+            // Scale down if either dimension exceeds MAX_SIDE
+            const longest = Math.max(width, height);
+            if (longest > MAX_SIDE) {
+                const ratio = MAX_SIDE / longest;
+                width = Math.round(width * ratio);
+                height = Math.round(height * ratio);
+            }
 
             const canvas = document.createElement('canvas');
-            canvas.width = target;
-            canvas.height = target;
+            canvas.width = width;
+            canvas.height = height;
             const ctx = canvas.getContext('2d');
 
-            ctx.drawImage(img, sx, sy, side, side, 0, 0, target, target);
+            ctx.drawImage(img, 0, 0, width, height);
 
             canvas.toBlob(
                 (blob) => {
@@ -93,7 +93,7 @@ export async function uploadImage(file, folder = 'employees') {
 
     validateFile(file);
 
-    // Resize + square crop
+    // Resize (no crop — preserves original aspect ratio)
     const processed = await processImage(file);
 
     const formData = new FormData();

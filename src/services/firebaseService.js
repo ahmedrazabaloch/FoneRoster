@@ -41,7 +41,7 @@ const EMPLOYEE_ALLOWED_FIELDS = [
     'employeeId', 'name', 'fatherName', 'designation', 'roleType',
     'phone', 'whatsapp', 'cnic', 'licenseNo', 'bloodGroup', 'onLeave', 'availability',
     'isDeleted', 'createdAt', 'updatedAt', 'deletedAt', 'deletedBy',
-    'photoUrl',
+    'photoUrl', 'photoPosition',
 ];
 
 /** Fields explicitly allowed for the public dashboard */
