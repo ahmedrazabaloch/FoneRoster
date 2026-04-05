@@ -92,5 +92,12 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update, delete: if false;
     }
+
+    // QR Scan logs — public creates (from verify page); admin+ reads; immutable
+    match /scanLogs/{logId} {
+      allow create: if true;
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
   }
 }

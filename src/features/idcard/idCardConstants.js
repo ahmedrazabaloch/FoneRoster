@@ -113,15 +113,10 @@ export function getCardDetails(employee) {
 }
 
 export function buildIdCardQrPayload(employee) {
-    const license = getLicenseValue(employee);
-
-    return JSON.stringify({
-        name: employee?.name || '',
-        employeeId: getEmployeeIdValue(employee),
-        designation: employee?.designation || '',
-        cnic: employee?.cnic || '',
-        license: license === '-' ? '' : license,
-    });
+    const employeeId = getEmployeeIdValue(employee);
+    const domain = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_PUBLIC_DOMAIN)
+        || 'https://fuelingteam.com';
+    return `${domain}/verify/${encodeURIComponent(employeeId)}`;
 }
 
 export function truncateText(value, maxLength) {

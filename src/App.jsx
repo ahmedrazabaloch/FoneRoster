@@ -30,6 +30,9 @@ const TeamPage = lazy(() =>
 const VerifyPage = lazy(() =>
   import('./pages/VerifyPage').then(m => ({ default: m.VerifyPage }))
 );
+const ScanLogsPage = lazy(() =>
+  import('./pages/ScanLogsPage').then(m => ({ default: m.ScanLogsPage }))
+);
 
 function App() {
   return (
@@ -72,6 +75,14 @@ function App() {
                     element={
                       <ProtectedRoute requiredRole="admin">
                         <LogsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/scan-logs"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <ScanLogsPage />
                       </ProtectedRoute>
                     }
                   />

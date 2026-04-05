@@ -4,13 +4,25 @@
  * Route: /verify/:id (PUBLIC — no auth required)
  * Fetches from publicEmployees collection only.
  *
- * DISPLAYS: Name, Designation, Employee ID, Status (Active/On Leave)
- * DOES NOT DISPLAY: CNIC, License, Phone, Blood Group, Father Name, Firestore ID
+ * DISPLAYS: Name, Designation, Employee ID, Status, Phone, Role
+ * DOES NOT DISPLAY: CNIC, License, Blood Group, Father Name, Firestore ID
+ *
+ * SCAN LOGGING: Logs every scan to Firestore `scanLogs` collection
+ * with timestamp, geolocation, and browser info.
+ * 10-second duplicate prevention per employeeId.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchPublicEmployee } from '../services/verifyService';
-import { Shield, CheckCircle, AlertTriangle, Loader } from 'lucide-react';
+import { logScan, getLocation } from '../services/scanLogService';
+import {
+    Shield,
+    CheckCircle,
+    AlertTriangle,
+    Loader,
+    MapPin,
+    Clock,
+} from 'lucide-react';
 
 const DESIGNATION_LABELS = {
     driver: 'Driver',
@@ -20,30 +32,58 @@ const DESIGNATION_LABELS = {
     executive_officer: 'Executive Officer',
 };
 
+const ROLE_TYPE_LABELS = {
+    field_team: 'Field Team',
+    hotline: 'Hotline',
+    management: 'Management',
+};
+
 export const VerifyPage = () => {
     const { id } = useParams();
     const [employee, setEmployee] = useState(null);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
+    const [location, setLocation] = useState(null);
+    const [scanTime] = useState(() => new Date());
+    const loggedRef = useRef(false);
 
     useEffect(() => {
         let cancelled = false;
         setLoading(true);
         setNotFound(false);
 
-        fetchPublicEmployee(id).then(data => {
+        fetchPublicEmployee(id).then(async (data) => {
             if (cancelled) return;
+
             if (data) {
                 setEmployee(data);
             } else {
                 setNotFound(true);
             }
             setLoading(false);
+
+            // ── Log the scan (fire-and-forget, once per mount) ──
+            if (!loggedRef.current) {
+                loggedRef.current = true;
+                logScan({
+                    employeeId: id,
+                    result: data ? 'verified' : 'not_found',
+                });
+            }
+
+            // ── Request geolocation for display (non-blocking) ──
+            try {
+                const loc = await getLocation();
+                if (!cancelled) setLocation(loc);
+            } catch {
+                // Ignore — UI continues fine without it
+            }
         });
 
         return () => { cancelled = true; };
     }, [id]);
 
+    // ── Loading State ──────────────────────────────────────────────
     if (loading) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
@@ -57,6 +97,7 @@ export const VerifyPage = () => {
         );
     }
 
+    // ── Not Found State ────────────────────────────────────────────
     if (notFound) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center p-4">
@@ -76,12 +117,15 @@ export const VerifyPage = () => {
         );
     }
 
+    // ── Verified State ─────────────────────────────────────────────
     const designationLabel = DESIGNATION_LABELS[employee.designation] || employee.designation;
+    const roleLabel = ROLE_TYPE_LABELS[employee.roleType] || employee.roleType;
     const isActive = !employee.onLeave;
 
     return (
         <div className="min-h-[60vh] flex items-center justify-center p-4">
             <div className="max-w-md w-full bg-white border-4 border-black shadow-brutal-lg overflow-hidden">
+
                 {/* ── Header ── */}
                 <div className="bg-[#E10600] px-6 py-4 border-b-4 border-black">
                     <div className="flex items-center gap-3">
@@ -112,25 +156,59 @@ export const VerifyPage = () => {
                     </div>
                 </div>
 
-                {/* ── Employee Details ── */}
-                <div className="px-6 py-5 space-y-4">
-                    <InfoRow label="Full Name" value={employee.name} bold />
-                    <InfoRow label="Designation" value={designationLabel} />
-                    <InfoRow label="Employee ID" value={employee.employeeId} mono />
-                    <div className="flex items-center justify-between pt-2 border-t-2 border-dashed border-gray-200">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
-                            Status
-                        </span>
-                        {isActive ? (
-                            <span className="bg-green-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 border-2 border-black shadow-brutal-sm">
-                                Active
-                            </span>
-                        ) : (
-                            <span className="bg-red-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 border-2 border-black shadow-brutal-sm">
-                                On Leave
-                            </span>
-                        )}
+                {/* ── Employee Details Table ── */}
+                <div className="px-0">
+                    <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+                        <tbody>
+                            <DetailRow label="Full Name" value={employee.name} bold />
+                            <DetailRow label="Employee ID" value={employee.employeeId} mono />
+                            <DetailRow label="Designation" value={designationLabel} />
+                            {roleLabel && <DetailRow label="Role" value={roleLabel} />}
+                            {employee.phone && <DetailRow label="Phone" value={employee.phone} />}
+                            <tr className="border-b-2 border-dashed border-gray-200">
+                                <td className="py-3 px-6 text-[10px] font-black text-gray-400 uppercase tracking-wider w-[35%] bg-gray-50">
+                                    Status
+                                </td>
+                                <td className="py-3 px-6">
+                                    {isActive ? (
+                                        <span className="bg-green-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 border-2 border-black shadow-brutal-sm">
+                                            Active
+                                        </span>
+                                    ) : (
+                                        <span className="bg-red-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 border-2 border-black shadow-brutal-sm">
+                                            On Leave
+                                        </span>
+                                    )}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* ── Scan Metadata ── */}
+                <div className="px-6 py-4 bg-gray-50 border-t-2 border-gray-200 space-y-2">
+                    <div className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                        <Clock size={12} />
+                        <span>Scanned: {scanTime.toLocaleString('en-PK', {
+                            day: '2-digit', month: 'short', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        })}</span>
                     </div>
+                    {location && location.source === 'browser_gps' && (
+                        <div className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                            <MapPin size={12} />
+                            <span>
+                                {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                                {location.accuracy && ` (±${location.accuracy.toFixed(0)}m)`}
+                            </span>
+                        </div>
+                    )}
+                    {location && location.source === 'denied' && (
+                        <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                            <MapPin size={12} />
+                            <span>Location access denied</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* ── Footer ── */}
@@ -144,13 +222,14 @@ export const VerifyPage = () => {
     );
 };
 
-const InfoRow = ({ label, value, bold, mono }) => (
-    <div>
-        <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-0.5">
+// ── Table Row Component ────────────────────────────────────────────
+const DetailRow = ({ label, value, bold, mono }) => (
+    <tr className="border-b border-gray-100">
+        <td className="py-3 px-6 text-[10px] font-black text-gray-400 uppercase tracking-wider w-[35%] bg-gray-50">
             {label}
-        </div>
-        <div className={`text-sm text-gray-900 ${bold ? 'font-black' : 'font-bold'} ${mono ? 'font-mono' : ''}`}>
+        </td>
+        <td className={`py-3 px-6 text-sm text-gray-900 ${bold ? 'font-black' : 'font-bold'} ${mono ? 'font-mono' : ''}`}>
             {value || '—'}
-        </div>
-    </div>
+        </td>
+    </tr>
 );
