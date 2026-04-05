@@ -13,6 +13,7 @@ import {
   EMERGENCY_CONTACT,
   getCardDetails,
 } from "./idCardConstants";
+import signatureAsset from "../../assets/signature.png";
 
 Font.register({
   family: "Barlow",
@@ -33,6 +34,17 @@ function resolveAsset(imported) {
   if (typeof imported === "string") return imported;
   if (imported && typeof imported.default === "string") return imported.default;
   return imported;
+}
+
+function toAbsoluteUrl(assetPath) {
+  const resolved = resolveAsset(assetPath);
+  if (!resolved) return null;
+  if (
+    resolved.startsWith("data:") ||
+    resolved.startsWith("http://") ||
+    resolved.startsWith("https://")
+  ) return resolved;
+  return `${window.location.origin}${resolved.startsWith("/") ? "" : "/"}${resolved}`;
 }
 
 // ── Colors ────────────────────────────────────────────────────────
@@ -319,9 +331,17 @@ const CardFrontPage = ({ details, qrDataUrl, logoSrc, frontBgSrc }) => {
           {qrDataUrl && <Image src={qrDataUrl} style={s.qrImage} />}
         </View>
 
-        {/* Signature block */}
+        {/* Signature image */}
         <View style={s.signatureBlock}>
-          <Text style={s.signatureName}>Formula One</Text>
+          <Image
+            src={toAbsoluteUrl(signatureAsset)}
+            style={{
+              width: 50,
+              height: 20,
+              objectFit: "contain",
+              marginBottom: 2,
+            }}
+          />
           <View style={s.signatureLine} />
           <Text style={s.signatureLabel}>Authorized By</Text>
         </View>
