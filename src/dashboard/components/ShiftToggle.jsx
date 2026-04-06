@@ -14,7 +14,7 @@ export const ShiftToggle = ({ isEffectiveNight, onToggle }) => {
                 flex border-4 border-black rounded-none
                 shadow-[8px_8px_0_#FFD600]
                 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[4px_4px_0_#FFD600]
-                select-none
+                select-none w-fit
             "
         >
             {/* DAY segment */}

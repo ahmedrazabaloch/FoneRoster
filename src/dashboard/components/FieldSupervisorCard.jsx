@@ -4,55 +4,60 @@
  * Shows the current shift's field supervisors with contact info.
  * Part of the Status Panel (left column).
  */
-import React from 'react';
-import { UserCheck, Phone } from 'lucide-react';
+import React from "react";
+import { UserCheck, Phone } from "lucide-react";
 
 export const FieldSupervisorCard = ({ supervisors }) => (
-    <div className="bg-white border-2 md:border-4 border-black p-3 md:p-6 shadow-brutal md:shadow-brutal-lg">
-        <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
-            <div className="bg-black p-2 md:p-3 rounded-full shadow-brutal-sm">
-                <UserCheck className="text-white" size={20} />
-            </div>
-            <div>
-                <h3 className="text-base md:text-xl font-black uppercase text-gray-900 leading-none">
-                    Field Supervisors
-                </h3>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-1">
-                    Shift Operations Command
-                </p>
-            </div>
-        </div>
-
-        <div className="space-y-4">
-            {supervisors && supervisors.length > 0 ? (
-                supervisors.map((sup, idx) => (
-                    <div
-                        key={idx}
-                        className="border-2 border-black p-3 md:p-4 bg-gray-50 shadow-brutal-sm md:shadow-brutal"
-                    >
-                        <div className="flex items-start justify-between mb-3">
-                            <span className="font-black uppercase text-base md:text-lg text-gray-900">{sup.name}</span>
-                            <span className="bg-gray-900 text-white px-3 py-1 text-xs font-bold uppercase border-2 border-black shadow-brutal-sm">
-                                Supervisor {idx + 1}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className="bg-blue-100 border-2 border-black p-3 shadow-brutal-sm flex-shrink-0">
-                                <Phone size={20} className="text-blue-700" />
-                            </div>
-                            <div className={`inline-block bg-yellow-300 px-3 py-1.5 border-2 border-black shadow-brutal-sm ${idx % 2 === 0 ? '-rotate-1' : 'rotate-1'}`}>
-                                <span className="text-base md:text-lg font-black font-mono text-red-600 tracking-tight">
-                                    {sup.phone}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                ))
-            ) : (
-                <span className="text-sm font-bold text-gray-400 italic">
-                    No supervisors assigned
-                </span>
-            )}
-        </div>
+  <div className="bg-white border-2 md:border-4 border-black p-3 md:p-6 shadow-brutal md:shadow-brutal-lg">
+    <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+      <div className="bg-black p-2 md:p-3 rounded-full shadow-brutal-sm">
+        <UserCheck className="text-white" size={20} />
+      </div>
+      <div>
+        <h3 className="text-base md:text-xl font-black uppercase text-gray-900 leading-none">
+          Field Supervisors
+        </h3>
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-1">
+          Shift Operations Command
+        </p>
+      </div>
     </div>
+
+    <div className="space-y-4">
+      {supervisors && supervisors.length > 0 ? (
+        supervisors.map((sup, idx) => (
+          <div
+            key={idx}
+            className="border-2 border-black p-3 md:p-4 bg-gray-50 shadow-brutal-sm md:shadow-brutal"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <span className="font-black uppercase text-base md:text-lg text-gray-900">
+                {sup.name}
+              </span>
+              <span className="bg-gray-900 text-white px-3 py-1 text-xs font-bold uppercase border-2 border-black shadow-brutal-sm">
+                Supervisor
+                {/* {idx + 1} */}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-100 border-2 border-black p-3 shadow-brutal-sm flex-shrink-0">
+                <Phone size={20} className="text-blue-700" />
+              </div>
+              <div
+                className={`inline-block bg-yellow-300 px-3 py-1.5 border-2 border-black shadow-brutal-sm ${idx % 2 === 0 ? "-rotate-1" : "rotate-1"}`}
+              >
+                <span className="text-base md:text-lg font-black font-mono text-red-600 tracking-tight">
+                  {sup.phone}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))
+      ) : (
+        <span className="text-sm font-bold text-gray-400 italic">
+          No supervisors assigned
+        </span>
+      )}
+    </div>
+  </div>
 );
