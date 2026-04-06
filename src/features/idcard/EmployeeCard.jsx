@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { User } from "lucide-react";
 import logoAsset from "../../assets/logo.png";
+import signatureAsset from "../../assets/signature.png";
 import CardFrontBg from "../../assets/card-front.png";
 import CardBackBg from "../../assets/card-back.png";
 import {
@@ -100,7 +101,10 @@ const CoverFillPhoto = ({ src, name, photoPosition }) => {
 
 // ─── Front Signature ───────────────────────────────────────────────
 
-const FrontSignatureBlock = () => (
+const FrontSignatureBlock = () => {
+  const signatureUrl = signatureAsset;
+
+  return (
   <div
     style={{
       display: "flex",
@@ -109,17 +113,29 @@ const FrontSignatureBlock = () => (
       gap: "4px",
     }}
   >
-    <div
-      style={{
-        fontFamily: "monospace, cursive",
-        fontWeight: 600,
-        fontSize: "18px",
-        color: "#2a2a2a",
-        lineHeight: 1,
-      }}
-    >
-      Formula One
-    </div>
+    {signatureUrl ? (
+      <img
+        src={signatureUrl}
+        alt="signature"
+        className="signature-img"
+        style={{
+          height: "28px",
+          objectFit: "contain",
+        }}
+      />
+    ) : (
+      <div
+        style={{
+          fontFamily: "monospace, cursive",
+          fontWeight: 600,
+          fontSize: "18px",
+          color: "#2a2a2a",
+          lineHeight: 1,
+        }}
+      >
+        Formula One
+      </div>
+    )}
     <div style={{ width: "90px", borderTop: "1px solid #ccc" }} />
     <div
       style={{
@@ -134,7 +150,8 @@ const FrontSignatureBlock = () => (
       Authorized By
     </div>
   </div>
-);
+  );
+};
 
 // ─── Front Side ────────────────────────────────────────────────────
 
@@ -324,6 +341,7 @@ const CardBack = ({ employee }) => {
     { label: "License", value: details.license },
     { label: "Blood Group", value: details.bloodGroup },
     { label: "Emergency Contact", value: EMERGENCY_CONTACT },
+    { label: "Expiry Date", value: details.expiryDate },
   ];
 
   return (
@@ -398,8 +416,8 @@ const CardBack = ({ employee }) => {
             flexDirection: "column",
             justifyContent: "center",
             alignItems: "flex-start",
-            padding: "14px 22px 10px",
-            gap: "10px",
+            padding: "8px 22px 12px",
+            gap: "8px",
           }}
         >
           {fields.map((field) => (
@@ -427,7 +445,7 @@ const CardBack = ({ employee }) => {
                 style={{
                   fontFamily: "Barlow, sans-serif",
                   fontWeight: 400,
-                  fontSize: "17px",
+                  fontSize: "16px",
                   color: "#333",
                   lineHeight: 1.3,
                   wordBreak: "break-word",
@@ -455,7 +473,7 @@ const CardBack = ({ employee }) => {
             flexDirection: "column",
             alignItems: "center",
             padding: "10px 18px 14px",
-            gap: "6px",
+            gap: "4px",
             flexShrink: 0,
           }}
         >

@@ -46,7 +46,7 @@ const EMPLOYEE_ALLOWED_FIELDS = [
 
 /** Fields explicitly allowed for the public dashboard */
 const PUBLIC_EMPLOYEE_FIELDS = [
-    'name', 'designation', 'roleType', 'phone', 'whatsapp', 'onLeave', 'availability', 'createdAt', 'updatedAt',
+    'employeeId', 'name', 'designation', 'roleType', 'phone', 'whatsapp', 'onLeave', 'availability', 'createdAt', 'updatedAt',
 ];
 
 /** Fields that must never appear in audit logs */

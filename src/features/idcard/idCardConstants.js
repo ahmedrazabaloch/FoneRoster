@@ -95,6 +95,16 @@ export function validatePhotoPosition(raw) {
 export function getCardDetails(employee) {
     const photoPosition = validatePhotoPosition(employee?.photoPosition);
 
+    const today = new Date();
+
+    const expiryDate = new Date();
+    expiryDate.setFullYear(today.getFullYear() + 1);
+
+    const formatDate = (date) =>
+      date.toLocaleDateString('en-GB');
+
+    const computedExpiryDate = formatDate(expiryDate);
+
     return {
         name: employee?.name || '-',
         designation: getDesignationLabel(employee?.designation),
@@ -104,6 +114,7 @@ export function getCardDetails(employee) {
         cnic: employee?.cnic || '-',
         license: getLicenseValue(employee),
         bloodGroup: getBloodGroupValue(employee),
+        expiryDate: computedExpiryDate,
         emergencyContact: EMERGENCY_CONTACT,
         photoUrl: employee?.photoUrl || '',
         photoPosition,

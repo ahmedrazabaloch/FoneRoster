@@ -14,19 +14,8 @@ import {
   getCardDetails,
 } from "./idCardConstants";
 import signatureAsset from "../../assets/signature.png";
-
-Font.register({
-  family: "Barlow",
-  fonts: [
-    { src: "/src/assets/fonts/Barlow-Regular.ttf" },
-    { src: "/src/assets/fonts/Barlow-Bold.ttf", fontWeight: 700 },
-  ],
-});
-
-// ── CR80 exact dimensions ─────────────────────────────────────────
-// 54mm × 85.6mm  ·  1mm = 2.83465pt
-const CR80_W_PT = 153.07; // 54   × 2.83465
-const CR80_H_PT = 242.53; // 85.6 × 2.83465
+import BarlowRegularFont from "../../assets/fonts/Barlow-Regular.ttf";
+import BarlowBoldFont from "../../assets/fonts/Barlow-Bold.ttf";
 
 // ── Resolve Vite asset imports to absolute URL strings ────────────
 // Vite may return either a raw string or a default-export object.
@@ -46,6 +35,20 @@ function toAbsoluteUrl(assetPath) {
   ) return resolved;
   return `${window.location.origin}${resolved.startsWith("/") ? "" : "/"}${resolved}`;
 }
+
+// Register fonts with absolute URLs
+Font.register({
+  family: "Barlow",
+  fonts: [
+    { src: toAbsoluteUrl(BarlowRegularFont) },
+    { src: toAbsoluteUrl(BarlowBoldFont), fontWeight: 700 },
+  ],
+});
+
+// ── CR80 exact dimensions ─────────────────────────────────────────
+// 54mm × 85.6mm  ·  1mm = 2.83465pt
+const CR80_W_PT = 153.07; // 54   × 2.83465
+const CR80_H_PT = 242.53; // 85.6 × 2.83465
 
 // ── Colors ────────────────────────────────────────────────────────
 const C = {
@@ -232,8 +235,8 @@ const s = StyleSheet.create({
     flexDirection: "column",
     justifyContent: "center",
     paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 5,
+    paddingTop: 6,
+    paddingBottom: 9,
     gap: 5,
   },
   fieldGroup: {
@@ -360,6 +363,7 @@ const CardBackPage = ({ details, logoSrc, backBgSrc }) => {
     { label: "License", value: details.license },
     { label: "Blood Group", value: details.bloodGroup },
     { label: "Emergency Contact", value: EMERGENCY_CONTACT },
+    { label: "Expiry Date", value: details.expiryDate },
   ];
 
   return (
