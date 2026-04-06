@@ -208,7 +208,7 @@ export const AdminPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 md:flex">
+        <div className="min-h-screen bg-gray-100 flex items-stretch md:flex">
             <aside className="hidden md:flex md:w-72 md:flex-shrink-0 md:border-r-2 md:border-black md:bg-white md:sticky md:top-0 md:h-screen">
                 <AdminSidebar
                     activeSection={activeSection}

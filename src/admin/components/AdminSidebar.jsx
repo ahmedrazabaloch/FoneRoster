@@ -267,7 +267,7 @@ export const AdminSidebar = ({ activeSection, onSectionChange, className = '' })
     }).filter(Boolean);
 
     return (
-        <nav className={`bg-white border-r-2 border-black ${className}`}>
+        <nav className={`bg-white border-r-2 border-black flex flex-col justify-start h-full overflow-y-auto pb-6 ${className}`}>
             {/* Header */}
             <div className="p-4 border-b-2 border-black bg-gray-900 text-white">
                 <div className="flex items-center gap-2">
