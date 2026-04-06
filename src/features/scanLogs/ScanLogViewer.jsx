@@ -1,8 +1,7 @@
 /**
  * ScanLogViewer.jsx — Admin QR Scan Log Dashboard
  *
- * Route: /admin/scan-logs
- * Access: admin+ (enforced by ProtectedRoute)
+ * Section: Admin dashboard sidebar (admin+ access enforced by the admin page)
  *
  * Features:
  *  - Real-time Firestore listener on scanLogs collection

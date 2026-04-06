@@ -72,7 +72,6 @@ export const Header = () => {
                         {user ? (
                             <>
                                 {isAdmin && <NAV_LINK to="/admin">Admin</NAV_LINK>}
-                                {isAdmin && <NAV_LINK to="/admin/scan-logs">Scan Logs</NAV_LINK>}
                                 <Button
                                     onClick={handleLogout}
                                     variant="ghost"
@@ -114,7 +113,6 @@ export const Header = () => {
                     {user ? (
                         <>
                             {isAdmin && <MOBILE_LINK to="/admin">Admin Panel</MOBILE_LINK>}
-                            {isAdmin && <MOBILE_LINK to="/admin/scan-logs">QR Scan Logs</MOBILE_LINK>}
                             <button
                                 onClick={handleLogout}
                                 className="block w-full text-left font-bold text-base py-3 px-3 text-red-600 min-h-[48px]"

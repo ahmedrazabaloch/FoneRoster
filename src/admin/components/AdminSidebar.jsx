@@ -12,11 +12,10 @@
  *   - Vehicles
  *   - Exports
  *   - Activity Logs
+ *   - QR Scan Logs
  *
  * Superadmin-only sections:
  *   - Admin Management
- *   - Authority Configuration
- *   - System Settings
  */
 import React from 'react';
 import {
@@ -25,9 +24,7 @@ import {
     Truck,
     Download,
     Shield,
-    Settings,
     UserCog,
-    FileSignature,
     Briefcase,
     Phone,
     FileText,
@@ -36,6 +33,7 @@ import {
     Bell,
     UserPlus,
     List,
+    QrCode,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { hasPermission, ACTIONS, ROLES } from '../../utils/rbac';
@@ -114,6 +112,13 @@ const NAV_CONFIG = [
         icon: Bell,
         moduleKey: 'auditLogs',
     },
+    {
+        id: 'scanLogs',
+        label: 'QR Scan Logs',
+        icon: QrCode,
+        permission: ACTIONS.LOGS_READ,
+        moduleKey: 'auditLogs',
+    },
     // Superadmin-only sections
     {
         id: 'divider-superadmin',
@@ -127,20 +132,6 @@ const NAV_CONFIG = [
         icon: UserCog,
         superadminOnly: true,
         permission: ACTIONS.ADMIN_MANAGE,
-    },
-    {
-        id: 'authority-config',
-        label: 'Authority Signature',
-        icon: FileSignature,
-        superadminOnly: true,
-        permission: ACTIONS.AUTHORITY_CONFIG,
-    },
-    {
-        id: 'system-settings',
-        label: 'System Settings',
-        icon: Settings,
-        superadminOnly: true,
-        permission: ACTIONS.SYSTEM_CONFIG,
     },
 ];
 

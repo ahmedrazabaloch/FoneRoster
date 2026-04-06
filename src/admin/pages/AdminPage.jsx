@@ -15,11 +15,10 @@
  *   - Vehicles
  *   - Exports
  *   - Activity Logs
+ *   - QR Scan Logs
  *
  * Superadmin-only sections:
  *   - Admin Management (user accounts)
- *   - Authority Configuration (signature)
- *   - System Settings
  */
 import React, { useState, useContext, useMemo } from 'react';
 import { Menu, X } from 'lucide-react';
@@ -31,19 +30,17 @@ import { AddMemberForm } from '../components/AddMemberForm';
 import { EmployeeDirectoryView } from '../components/EmployeeDirectoryView';
 import { ExportsPanel } from '../components/ExportsPanel';
 import { AuditLogs } from '../components/AuditLogs';
+import { ScanLogViewer } from '../../features/scanLogs/ScanLogViewer';
 import { AlertsPanel } from '../../dashboard/components/AlertsPanel';
 import { VehicleManagementPage } from '../components/VehicleManagementPage';
 import { RosterContext } from '../../context/RosterContext';
 import { useClock } from '../../hooks/useClock';
 import { useAuth } from '../../hooks/useAuth';
-import { hasPermission, ACTIONS, ROLES } from '../../utils/rbac';
+import { ROLES } from '../../utils/rbac';
 
 // Lazy load superadmin components
 const UserManagementPanel = React.lazy(() =>
     import('../../features/superadmin/UserManagementPanel').then(m => ({ default: m.UserManagementPanel }))
-);
-const AuthorityConfigPanel = React.lazy(() =>
-    import('../../superadmin/components/AuthorityConfigPanel').then(m => ({ default: m.AuthorityConfigPanel }))
 );
 
 export const AdminPage = () => {
@@ -181,6 +178,14 @@ export const AdminPage = () => {
                     </div>
                 );
 
+            case 'scanLogs':
+                return (
+                    <div className="max-w-7xl mx-auto px-3 md:px-4 py-4 md:py-8">
+                        <SectionHeader title="QR Scan Logs" subtitle="Review scan verification activity" />
+                        <ScanLogViewer />
+                    </div>
+                );
+
             // Superadmin-only sections
             case 'admin-management':
                 if (!isSuperAdmin) return <AccessDenied />;
@@ -190,30 +195,6 @@ export const AdminPage = () => {
                         <React.Suspense fallback={<LoadingPanel />}>
                             <UserManagementPanel />
                         </React.Suspense>
-                    </div>
-                );
-
-            case 'authority-config':
-                if (!isSuperAdmin) return <AccessDenied />;
-                return (
-                    <div className="max-w-3xl mx-auto px-3 md:px-4 py-4 md:py-8">
-                        <SectionHeader title="Authority Configuration" subtitle="Configure signature and authority details" />
-                        <React.Suspense fallback={<LoadingPanel />}>
-                            <AuthorityConfigPanel />
-                        </React.Suspense>
-                    </div>
-                );
-
-            case 'system-settings':
-                if (!isSuperAdmin) return <AccessDenied />;
-                return (
-                    <div className="max-w-3xl mx-auto px-3 md:px-4 py-4 md:py-8">
-                        <SectionHeader title="System Settings" subtitle="Global system configuration" />
-                        <div className="border-2 border-black p-6 bg-gray-50">
-                            <p className="text-gray-500 font-bold uppercase text-sm text-center">
-                                System settings panel - Coming soon
-                            </p>
-                        </div>
                     </div>
                 );
 
@@ -227,40 +208,65 @@ export const AdminPage = () => {
     };
 
     return (
-        <div className="flex min-h-screen bg-gray-100">
-            {/* Mobile sidebar toggle */}
-            <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden fixed bottom-4 right-4 z-50 p-3 bg-red-600 text-white border-2 border-black shadow-brutal"
-            >
-                {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-
-            {/* Sidebar - hidden on mobile unless toggled */}
-            <div
-                className={`fixed lg:static inset-y-0 left-0 z-40 w-64 transform transition-transform lg:transform-none ${
-                    sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-                }`}
-            >
+        <div className="min-h-screen bg-gray-100 md:flex">
+            <aside className="hidden md:flex md:w-72 md:flex-shrink-0 md:border-r-2 md:border-black md:bg-white md:sticky md:top-0 md:h-screen">
                 <AdminSidebar
                     activeSection={activeSection}
                     onSectionChange={handleSectionChange}
                     className="h-full"
                 />
+            </aside>
+
+            <div className="flex min-w-0 flex-1 flex-col">
+                <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-gray-200 bg-white/95 px-4 backdrop-blur md:hidden">
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">
+                            Admin Panel
+                        </p>
+                        <h1 className="text-sm font-black uppercase tracking-wide text-gray-900">
+                            Navigation
+                        </h1>
+                    </div>
+                    <button
+                        onClick={() => setSidebarOpen(!sidebarOpen)}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50"
+                        aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+                    >
+                        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
+                </header>
+
+                <main className="flex-1 min-w-0 overflow-auto">
+                    {renderContent()}
+                </main>
             </div>
 
-            {/* Mobile overlay */}
-            {sidebarOpen && (
+            <div
+                className={`fixed inset-0 z-40 transition-opacity duration-300 md:hidden ${
+                    sidebarOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+                }`}
+            >
                 <div
-                    className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+                    className={`absolute inset-0 bg-slate-950/60 transition-opacity duration-300 ${
+                        sidebarOpen ? 'opacity-100' : 'opacity-0'
+                    }`}
                     onClick={() => setSidebarOpen(false)}
                 />
-            )}
 
-            {/* Main content */}
-            <main className="flex-1 min-w-0 overflow-auto">
-                {renderContent()}
-            </main>
+                <div
+                    className={`absolute left-0 top-16 bottom-0 z-50 w-80 max-w-[86vw] bg-white shadow-2xl transition-transform duration-300 ease-out ${
+                        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}
+                >
+                    <div className="h-full overflow-y-auto">
+                        <AdminSidebar
+                            activeSection={activeSection}
+                            onSectionChange={handleSectionChange}
+                            className="h-full"
+                        />
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
