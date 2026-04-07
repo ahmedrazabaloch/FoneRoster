@@ -5,6 +5,8 @@
 @layer base {
   * {
     @apply border-black;
+    scrollbar-width: thin;
+    scrollbar-color: #000000 #f8f9fa;
   }
 
   body {
@@ -12,6 +14,31 @@
     background-color: #f8f9fa;
     background-image: radial-gradient(circle, #b0b8c1 1px, transparent 1px);
     background-size: 28px 28px;
+  }
+
+  *::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-left: 2px solid #000000;
+    border-top: 2px solid #000000;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #111111;
+    border: 2px solid #000000;
+    border-radius: 0;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #000000;
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: #000000;
   }
 
   ::selection {
@@ -22,6 +49,10 @@
 @layer utilities {
   .shadow-brutal-active {
     box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
+  }
+
+  .shadow-yellow-brutal {
+    box-shadow: 4px 4px 0px 0px #facc15;
   }
 
   .shadow-brutal-none {

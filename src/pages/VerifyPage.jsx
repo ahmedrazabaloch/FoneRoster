@@ -23,6 +23,7 @@ import {
     MapPin,
     Clock,
 } from 'lucide-react';
+import { formatPhone } from '../utils/sanitizeInput';
 
 const DESIGNATION_LABELS = {
     driver: 'Driver',
@@ -164,7 +165,7 @@ export const VerifyPage = () => {
                             <DetailRow label="Employee ID" value={employee.employeeId} mono />
                             <DetailRow label="Designation" value={designationLabel} />
                             {roleLabel && <DetailRow label="Role" value={roleLabel} />}
-                            {employee.phone && <DetailRow label="Phone" value={employee.phone} />}
+                            {employee.phone && <DetailRow label="Phone" value={formatPhone(employee.phone)} />}
                             <tr className="border-b-2 border-dashed border-gray-200">
                                 <td className="py-3 px-6 text-[10px] font-black text-gray-400 uppercase tracking-wider w-[35%] bg-gray-50">
                                     Status

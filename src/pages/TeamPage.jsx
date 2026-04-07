@@ -15,6 +15,7 @@ import { useAuth } from '../hooks/useAuth';
 import { exportTeamCsv } from '../utils/csvExport';
 import { logActivity, AUDIT_ACTIONS } from '../services/auditService';
 import { toast } from 'sonner';
+import { formatPhone } from '../utils/sanitizeInput';
 
 const DESIGNATION_LABELS = {
     driver: 'Driver',
@@ -168,7 +169,7 @@ export const TeamPage = () => {
                                                 <td className="px-4 py-2 text-xs text-gray-500 font-bold">
                                                     {DESIGNATION_LABELS[m.designation] || m.designation || '—'}
                                                 </td>
-                                                <td className="px-4 py-2 font-mono text-xs">{m.phone || '—'}</td>
+                                                <td className="px-4 py-2 font-mono text-xs">{formatPhone(m.phone) || '—'}</td>
                                                 <td className="px-4 py-2">
                                                     <span className={`text-[10px] font-black uppercase px-2 py-0.5 border ${m.onLeave
                                                         ? 'bg-yellow-50 text-yellow-700 border-yellow-300'

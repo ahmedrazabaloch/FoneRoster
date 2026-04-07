@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { adminService, MODULE_PERMISSIONS } from '../../services/adminService';
 import { AdminFormModal } from './AdminFormModal';
 import { AuthContext } from '../../auth/AuthContext';
+import { formatPhone } from '../../utils/sanitizeInput';
 
 const ROLE_BADGE = {
     admin: 'bg-blue-100 text-blue-800 border-blue-300',
@@ -139,7 +140,7 @@ export const UserManagementPanel = () => {
                                             }
                                         </div>
                                         <div className="text-xs font-mono text-gray-500 mt-0.5">
-                                            {admin.phone} · login: {admin.phone}@admin.local
+                                            {formatPhone(admin.phone)} · login: {admin.phone}@admin.local
                                         </div>
 
                                         {/* Permissions */}

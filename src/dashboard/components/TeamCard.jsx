@@ -17,51 +17,56 @@
 import React from 'react';
 import { User, Users, Truck, Phone, MessageCircle } from 'lucide-react';
 import { Badge } from '../../components/ui';
-import { formatWhatsAppUrl } from '../../lib/utils';
+import { formatPhone, formatTelUrl, formatWhatsAppUrl } from '../../lib/utils';
 
-const MobilePersonRow = ({ label, icon: IconComponent, person }) => (
-    <div className="flex items-center gap-2 py-2 border-b border-gray-200 last:border-b-0">
-        <div className="flex items-center gap-1 w-16 shrink-0 text-gray-400">
-            <IconComponent size={12} />
-            <span className="text-[9px] font-black uppercase tracking-wider">{label}</span>
-        </div>
-        <span className="font-bold text-sm text-gray-900 truncate flex-1 min-w-0">
-            {person?.name || 'Unassigned'}
-        </span>
-        {person && (
-            <div className="flex items-center gap-1.5 shrink-0">
-                {person.whatsapp && (
-                    <a href={formatWhatsAppUrl(person.whatsapp)} className="bg-green-100 border border-black p-1.5 shadow-brutal-sm">
-                        <MessageCircle size={12} className="text-green-700" />
-                    </a>
-                )}
-                {person.phone && (
-                    <a href={`tel:${person.phone}`} className="bg-blue-100 border border-black p-1.5 shadow-brutal-sm">
-                        <Phone size={12} className="text-blue-700" />
-                    </a>
-                )}
+const MobilePersonRow = ({ label, icon, person }) => {
+    const Icon = icon;
+
+    return (
+        <div className="flex items-center gap-2 py-2 border-b border-gray-200 last:border-b-0">
+            <div className="flex items-center gap-1 w-16 shrink-0 text-gray-400">
+                <Icon size={12} />
+                <span className="text-[9px] font-black uppercase tracking-wider">{label}</span>
             </div>
-        )}
-    </div>
-);
+            <span className="font-bold text-sm text-gray-900 truncate flex-1 min-w-0">
+                {person?.name || 'Unassigned'}
+            </span>
+            {person && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                    {person.whatsapp && (
+                        <a href={formatWhatsAppUrl(person.whatsapp)} className="bg-green-100 border border-black p-1.5 shadow-brutal-sm">
+                            <MessageCircle size={12} className="text-green-700" />
+                        </a>
+                    )}
+                    {person.phone && (
+                        <a href={formatTelUrl(person.phone)} className="bg-blue-100 border border-black p-1.5 shadow-brutal-sm">
+                            <Phone size={12} className="text-blue-700" />
+                        </a>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const ContactRow = ({ value, type }) => {
     if (!value) return null;
     const isWa = type === 'wa';
+    const destination = isWa ? formatWhatsAppUrl(value) : formatTelUrl(value);
     return (
         <div className="flex items-center gap-2">
-            <div className={`p-1.5 border border-black ${isWa ? 'bg-green-100' : 'bg-blue-100'}`}>
+            <a href={destination} className={`p-1.5 border border-black ${isWa ? 'bg-green-100' : 'bg-blue-100'}`}>
                 {isWa ? (
                     <MessageCircle size={12} className="text-green-700" />
                 ) : (
                     <Phone size={12} className="text-blue-700" />
                 )}
-            </div>
+            </a>
             <a
-                href={isWa ? formatWhatsAppUrl(value) : `tel:${value}`}
+                href={destination}
                 className="text-xs font-mono font-bold text-gray-700 hover:text-red-600"
             >
-                {value}
+                {formatPhone(value)}
             </a>
         </div>
     );

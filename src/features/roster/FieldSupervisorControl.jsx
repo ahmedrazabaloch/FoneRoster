@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { Shield } from 'lucide-react';
 import { RosterContext } from '../../context/RosterContext';
 import { CollapsibleSection } from '../../components/ui/CollapsibleSection';
+import { formatPhone } from '../../utils/sanitizeInput';
 
 export const FieldSupervisorControl = () => {
     const { employees, fieldSupervisorRoster, setFieldSupervisorRoster, saveConfig } = useContext(RosterContext);
@@ -63,7 +64,7 @@ export const FieldSupervisorControl = () => {
                                         {sup.name}
                                     </span>
                                     <span className="text-xs text-gray-500 font-bold">
-                                        {sup.phone}
+                                        {formatPhone(sup.phone)}
                                     </span>
                                 </div>
                                 <span className="bg-emerald-600 text-white px-3 py-1 text-[10px] md:text-xs font-bold uppercase border-2 border-black shadow-brutal-sm self-start">

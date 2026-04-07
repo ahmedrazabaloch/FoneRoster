@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { hasPermission, ACTIONS, ROLES, isSuperAdminRole } from '../../utils/rbac';
+import { formatTelUrl, formatWhatsAppUrl } from '../../lib/utils';
 
 // ─── Data Masking Utilities ────────────────────────────────────────
 
@@ -75,9 +76,18 @@ function maskLicense(license, showFull = false) {
  */
 function maskPhone(phone, showFull = false) {
     if (!phone) return '—';
-    if (showFull) return phone;
-    if (phone.length < 8) return phone;
-    return `${phone.slice(0, 4)}***${phone.slice(-4)}`;
+    const clean = phone.replace(/\D/g, '');
+    if (showFull) {
+        if (clean.length === 11 && clean.startsWith('03')) {
+            return `${clean.slice(0, 4)}-${clean.slice(4)}`;
+        }
+        if (clean.length === 10 && clean.startsWith('3')) {
+            return `${clean.slice(0, 3)}-${clean.slice(3)}`;
+        }
+        return phone;
+    }
+    if (clean.length < 8) return phone;
+    return `${clean.slice(0, 4)}***${clean.slice(-4)}`;
 }
 
 // ─── Status Badge Component ────────────────────────────────────────
@@ -296,27 +306,42 @@ const ActionMenu = memo(({
 
 ActionMenu.displayName = 'ActionMenu';
 
-const MenuButton = memo(({ icon: Icon, label, onClick, className = '' }) => (
-    <button
-        onClick={onClick}
-        className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-left hover:bg-gray-50 transition-colors ${className}`}
-    >
-        <Icon size={14} />
-        {label}
-    </button>
-));
+const MenuButton = memo(({ icon, label, onClick, className = '' }) => {
+    const Icon = icon;
+
+    return (
+        <button
+            onClick={onClick}
+            className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-left hover:bg-gray-50 transition-colors ${className}`}
+        >
+            <Icon size={14} />
+            {label}
+        </button>
+    );
+});
 
 MenuButton.displayName = 'MenuButton';
 
 // ─── Contact Info Row ──────────────────────────────────────────────
 
-const ContactRow = memo(({ icon: Icon, value, label, iconColor }) => {
+const ContactRow = memo(({ icon, value, label, iconColor, href }) => {
     if (!value || value === '—') return null;
+    const Icon = icon;
 
     return (
         <div className="flex items-center gap-2 text-sm">
-            <Icon size={14} className={`flex-shrink-0 ${iconColor}`} />
-            <span className="font-mono text-gray-700">{value}</span>
+            {href ? (
+                <a href={href} className="inline-flex">
+                    <Icon size={14} className={`flex-shrink-0 ${iconColor}`} />
+                </a>
+            ) : (
+                <Icon size={14} className={`flex-shrink-0 ${iconColor}`} />
+            )}
+            {href ? (
+                <a href={href} className="font-mono text-gray-700 hover:text-red-600">{value}</a>
+            ) : (
+                <span className="font-mono text-gray-700">{value}</span>
+            )}
             {label && <span className="text-[10px] text-gray-400 uppercase">{label}</span>}
         </div>
     );
@@ -522,13 +547,15 @@ export const EmployeeCard = memo(({
             <div className="mt-3 pt-3 border-t border-gray-200 space-y-1.5">
                 <ContactRow
                     icon={Phone}
-                    value={canViewSensitive ? emp.phone : maskPhone(emp.phone, showSensitive)}
+                    value={canViewSensitive ? maskPhone(emp.phone, true) : maskPhone(emp.phone, showSensitive)}
+                    href={canViewSensitive ? formatTelUrl(emp.phone) : undefined}
                     iconColor="text-blue-500"
                 />
                 {emp.whatsapp && emp.whatsapp !== emp.phone && (
                     <ContactRow
                         icon={MessageCircle}
-                        value={canViewSensitive ? emp.whatsapp : maskPhone(emp.whatsapp, showSensitive)}
+                        value={canViewSensitive ? maskPhone(emp.whatsapp, true) : maskPhone(emp.whatsapp, showSensitive)}
+                        href={canViewSensitive ? formatWhatsAppUrl(emp.whatsapp) : undefined}
                         label="WhatsApp"
                         iconColor="text-green-500"
                     />

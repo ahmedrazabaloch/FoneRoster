@@ -15,6 +15,8 @@ import { Edit, Trash2, User, Phone, MessageCircle, X, Save, CreditCard } from 'l
 import { toast } from 'sonner';
 import { validateEmployee } from '../../utils/validateEmployee';
 import { formatCnic } from '../../utils/formatters';
+import { formatPhone } from '../../utils/sanitizeInput';
+import { formatTelUrl, formatWhatsAppUrl } from '../../lib/utils';
 import { DESIGNATION_OPTIONS } from '../../config/designations';
 
 
@@ -121,12 +123,20 @@ export const EmployeeCardMobile = memo(({ emp, onDelete, onUpdate, onToggleLeave
                 <InfoRow label="ID" value={emp.employeeId || '—'} />
                 <InfoRow label="CNIC" value={emp.cnic || '—'} />
                 <div style={s.infoRow}>
-                    <Phone size={12} style={{ marginRight: 4, color: '#3b82f6', flexShrink: 0 }} />
-                    <span style={s.infoValue}>{emp.phone || '—'}</span>
+                    <a href={formatTelUrl(emp.phone)} style={{ display: 'inline-flex', marginRight: 4 }}>
+                        <Phone size={12} style={{ color: '#3b82f6', flexShrink: 0 }} />
+                    </a>
+                    <a href={formatTelUrl(emp.phone)} style={{ ...s.infoValue, textDecoration: 'none' }}>
+                        {formatPhone(emp.phone) || '—'}
+                    </a>
                     {emp.whatsapp && emp.whatsapp !== emp.phone && (
                         <>
-                            <MessageCircle size={12} style={{ marginLeft: 10, marginRight: 4, color: '#16a34a', flexShrink: 0 }} />
-                            <span style={s.infoValue}>{emp.whatsapp}</span>
+                            <a href={formatWhatsAppUrl(emp.whatsapp)} style={{ display: 'inline-flex', marginLeft: 10, marginRight: 4 }}>
+                                <MessageCircle size={12} style={{ color: '#16a34a', flexShrink: 0 }} />
+                            </a>
+                            <a href={formatWhatsAppUrl(emp.whatsapp)} style={{ ...s.infoValue, textDecoration: 'none' }}>
+                                {formatPhone(emp.whatsapp)}
+                            </a>
                         </>
                     )}
                 </div>

@@ -2,7 +2,7 @@ import React from 'react';
 import { User, Users, Truck, Phone, MessageCircle } from 'lucide-react';
 import { ContactRow } from './ContactRow';
 import { Badge } from '../../components/ui';
-import { formatWhatsAppUrl } from '../../lib/utils';
+import { formatTelUrl, formatWhatsAppUrl } from '../../lib/utils';
 
 const MobilePersonRow = ({ label, icon: Icon, person }) => (
     <div className="flex items-center gap-2 py-2 border-b border-gray-200 last:border-b-0">
@@ -21,7 +21,7 @@ const MobilePersonRow = ({ label, icon: Icon, person }) => (
                     </a>
                 )}
                 {person.phone && (
-                    <a href={`tel:${person.phone}`} className="bg-blue-100 border border-black p-1.5 shadow-brutal-sm">
+                    <a href={formatTelUrl(person.phone)} className="bg-blue-100 border border-black p-1.5 shadow-brutal-sm">
                         <Phone size={12} className="text-blue-700" />
                     </a>
                 )}

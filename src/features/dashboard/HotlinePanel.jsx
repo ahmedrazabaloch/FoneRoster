@@ -1,7 +1,7 @@
 import React from 'react';
 import { Phone, MessageCircle, Headset } from 'lucide-react';
 import { LiveClock } from './LiveClock';
-import { formatWhatsAppUrl } from '../../lib/utils';
+import { formatPhone, formatTelUrl, formatWhatsAppUrl } from '../../lib/utils';
 
 export const HotlinePanel = ({ currentOperator, shiftName, onDayShift, loading }) => (
     <div className="bg-white border-2 md:border-4 border-black shadow-brutal md:shadow-brutal-xl p-4 md:p-8 flex flex-col h-fit">
@@ -42,31 +42,59 @@ export const HotlinePanel = ({ currentOperator, shiftName, onDayShift, loading }
         </div>
         <div className="space-y-3 mb-4 md:mb-8">
             <div className="flex items-center gap-3">
-                <div className="bg-green-100 border-2 border-black p-3 shadow-brutal-sm flex-shrink-0">
-                    <MessageCircle size={20} className="text-green-700" />
-                </div>
-                <div className="inline-block bg-yellow-300 px-4 py-1.5 border-2 border-black shadow-brutal-sm -rotate-1">
-                    <span className="font-mono font-black text-base md:text-xl text-red-600 tracking-tighter">
-                        {currentOperator?.whatsapp || 'N/A'}
-                    </span>
-                </div>
+                {currentOperator?.whatsapp ? (
+                    <a href={formatWhatsAppUrl(currentOperator.whatsapp)} className="bg-green-100 border-2 border-black p-3 shadow-brutal-sm flex-shrink-0">
+                        <MessageCircle size={20} className="text-green-700" />
+                    </a>
+                ) : (
+                    <div className="bg-green-100 border-2 border-black p-3 shadow-brutal-sm flex-shrink-0">
+                        <MessageCircle size={20} className="text-green-700" />
+                    </div>
+                )}
+                {currentOperator?.whatsapp ? (
+                    <a href={formatWhatsAppUrl(currentOperator.whatsapp)} className="inline-block bg-yellow-300 px-4 py-1.5 border-2 border-black shadow-brutal-sm -rotate-1">
+                        <span className="font-mono font-black text-base md:text-xl text-red-600 tracking-tighter">
+                            {formatPhone(currentOperator.whatsapp)}
+                        </span>
+                    </a>
+                ) : (
+                    <div className="inline-block bg-yellow-300 px-4 py-1.5 border-2 border-black shadow-brutal-sm -rotate-1">
+                        <span className="font-mono font-black text-base md:text-xl text-red-600 tracking-tighter">
+                            {formatPhone(currentOperator?.whatsapp)}
+                        </span>
+                    </div>
+                )}
             </div>
             <div className="flex items-center gap-3">
-                <div className="bg-blue-100 border-2 border-black p-3 shadow-brutal-sm flex-shrink-0">
-                    <Phone size={20} className="text-blue-700" />
-                </div>
-                <div className="inline-block bg-yellow-300 px-4 py-1.5 border-2 border-black shadow-brutal-sm rotate-1">
-                    <span className="font-mono font-black text-base md:text-xl text-red-600 tracking-tighter">
-                        {currentOperator?.phone || 'N/A'}
-                    </span>
-                </div>
+                {currentOperator?.phone ? (
+                    <a href={formatTelUrl(currentOperator.phone)} className="bg-blue-100 border-2 border-black p-3 shadow-brutal-sm flex-shrink-0">
+                        <Phone size={20} className="text-blue-700" />
+                    </a>
+                ) : (
+                    <div className="bg-blue-100 border-2 border-black p-3 shadow-brutal-sm flex-shrink-0">
+                        <Phone size={20} className="text-blue-700" />
+                    </div>
+                )}
+                {currentOperator?.phone ? (
+                    <a href={formatTelUrl(currentOperator.phone)} className="inline-block bg-yellow-300 px-4 py-1.5 border-2 border-black shadow-brutal-sm rotate-1">
+                        <span className="font-mono font-black text-base md:text-xl text-red-600 tracking-tighter">
+                            {formatPhone(currentOperator.phone)}
+                        </span>
+                    </a>
+                ) : (
+                    <div className="inline-block bg-yellow-300 px-4 py-1.5 border-2 border-black shadow-brutal-sm rotate-1">
+                        <span className="font-mono font-black text-base md:text-xl text-red-600 tracking-tighter">
+                            {formatPhone(currentOperator?.phone)}
+                        </span>
+                    </div>
+                )}
             </div>
         </div>
         <div className="grid grid-cols-2 gap-3 md:gap-4 mt-auto">
             {currentOperator ? (
                 <>
                     <a
-                        href={`tel:${currentOperator.phone}`}
+                        href={formatTelUrl(currentOperator.phone)}
                         className="flex items-center justify-center bg-green-600 text-white border-2 border-black py-2.5 md:py-3 font-black uppercase text-sm shadow-brutal-sm md:shadow-brutal hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-brutal-active transition-all min-h-[44px]"
                     >
                         <Phone size={18} className="mr-2" /> Call

@@ -1,5 +1,6 @@
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { normalizePhone } from '../utils/formatters';
 
 /**
  * Utility function to merge Tailwind classes
@@ -13,6 +14,16 @@ export function cn(...inputs) {
  */
 export function formatPhone(phone) {
     if (!phone) return 'N/A';
+    const normalized = normalizePhone(phone);
+
+    if (normalized.length === 11 && normalized.startsWith('03')) {
+        return `${normalized.slice(0, 4)}-${normalized.slice(4)}`;
+    }
+
+    if (normalized.length === 10 && normalized.startsWith('3')) {
+        return `${normalized.slice(0, 3)}-${normalized.slice(3)}`;
+    }
+
     return phone;
 }
 
@@ -23,10 +34,18 @@ export function formatWhatsAppUrl(phone) {
     if (!phone) return '#';
     // Remove hyphens and convert to international format
     // Assumes Pakistani numbers (92)
-    const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
+    const cleaned = normalizePhone(phone);
     // If starts with 0, replace with 92
     const international = cleaned.startsWith('0') ? `92${cleaned.slice(1)}` : cleaned;
     return `https://wa.me/${international}`;
+}
+
+/**
+ * Format phone URL for call links.
+ */
+export function formatTelUrl(phone) {
+    if (!phone) return '#';
+    return `tel:${normalizePhone(phone)}`;
 }
 
 /**

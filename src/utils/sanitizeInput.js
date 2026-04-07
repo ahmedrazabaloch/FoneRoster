@@ -149,7 +149,7 @@ export function formatPhone(phone) {
     if (normalized.length === 10) {
         return `${normalized.slice(0, 3)}-${normalized.slice(3)}`;
     }
-    return normalized;
+    return phone;
 }
 
 // ─── CNIC Validation ───────────────────────────────────────────────

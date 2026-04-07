@@ -8,6 +8,8 @@
  * Uses team.assignments = { Driver, Supervisor, Helper } structure.
  */
 
+import { formatPhone } from './sanitizeInput';
+
 const HEADERS = [
     'Date',
     'Vehicle Number',
@@ -50,7 +52,7 @@ function buildTeamRow(team, empMap, vehiclesMap) {
         driver?.name || '',
         supervisor?.name || '',
         helper?.name || '',
-        supervisor?.phone || '',
+        formatPhone(supervisor?.phone || ''),
     ];
     return cols.map(escapeCell).join(',');
 }

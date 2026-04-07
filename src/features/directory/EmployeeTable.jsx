@@ -10,6 +10,8 @@ import { IdCardPreviewModal } from '../idcard/IdCardPreviewModal';
 import { useWindowWidth } from '../../hooks/useWindowWidth';
 import { useAuth } from '../../hooks/useAuth';
 import { hasPermission } from '../../utils/rbac';
+import { formatPhone } from '../../utils/sanitizeInput';
+import { formatTelUrl, formatWhatsAppUrl } from '../../lib/utils';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -246,20 +248,28 @@ export const EmployeeTable = ({ employees, onEdit, onDelete, onRestore, onUpdate
                                                     {emp.phone === emp.whatsapp ? (
                                                         <div className="flex items-center space-x-2 bg-gray-100 p-1.5 rounded border border-gray-300">
                                                             <div className="flex space-x-1">
-                                                                <Phone size={12} className="text-blue-600" />
-                                                                <MessageCircle size={12} className="text-green-600" />
+                                                                <a href={formatTelUrl(emp.phone)} className="inline-flex">
+                                                                    <Phone size={12} className="text-blue-600" />
+                                                                </a>
+                                                                <a href={formatWhatsAppUrl(emp.whatsapp)} className="inline-flex">
+                                                                    <MessageCircle size={12} className="text-green-600" />
+                                                                </a>
                                                             </div>
-                                                            <span>{emp.phone}</span>
+                                                            <span>{formatPhone(emp.phone)}</span>
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-1">
                                                             <div className="flex items-center">
-                                                                <Phone size={12} className="mr-1 text-blue-600" />
-                                                                {emp.phone}
+                                                                <a href={formatTelUrl(emp.phone)} className="mr-1 inline-flex">
+                                                                    <Phone size={12} className="text-blue-600" />
+                                                                </a>
+                                                                {formatPhone(emp.phone)}
                                                             </div>
                                                             <div className="flex items-center text-green-600">
-                                                                <MessageCircle size={12} className="mr-1" />
-                                                                {emp.whatsapp}
+                                                                <a href={formatWhatsAppUrl(emp.whatsapp)} className="mr-1 inline-flex">
+                                                                    <MessageCircle size={12} />
+                                                                </a>
+                                                                {formatPhone(emp.whatsapp)}
                                                             </div>
                                                         </div>
                                                     )}

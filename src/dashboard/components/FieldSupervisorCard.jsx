@@ -6,6 +6,7 @@
  */
 import React from "react";
 import { UserCheck, Phone } from "lucide-react";
+import { formatPhone, formatTelUrl } from '../../lib/utils';
 
 export const FieldSupervisorCard = ({ supervisors }) => (
   <div className="bg-white border-2 md:border-4 border-black p-3 md:p-6 shadow-brutal md:shadow-brutal-lg">
@@ -40,16 +41,17 @@ export const FieldSupervisorCard = ({ supervisors }) => (
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="bg-blue-100 border-2 border-black p-3 shadow-brutal-sm flex-shrink-0">
+              <a href={formatTelUrl(sup.phone)} className="bg-blue-100 border-2 border-black p-3 shadow-brutal-sm flex-shrink-0">
                 <Phone size={20} className="text-blue-700" />
-              </div>
-              <div
+              </a>
+              <a
+                href={formatTelUrl(sup.phone)}
                 className={`inline-block bg-yellow-300 px-3 py-1.5 border-2 border-black shadow-brutal-sm ${idx % 2 === 0 ? "-rotate-1" : "rotate-1"}`}
               >
                 <span className="text-base md:text-lg font-black font-mono text-red-600 tracking-tight">
-                  {sup.phone}
+                  {formatPhone(sup.phone)}
                 </span>
-              </div>
+              </a>
             </div>
           </div>
         ))
