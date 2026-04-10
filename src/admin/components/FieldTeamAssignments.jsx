@@ -256,7 +256,7 @@ export const FieldTeamAssignments = () => {
                 badge={`${dayTeams.length} Teams`}
                 defaultOpen={false}
             >
-                <div className="space-y-6 md:space-y-8 bg-black">
+                <div className="space-y-6 md:space-y-8">
                     {dayTeams.length === 0 && (
                         <p className="text-sm text-gray-400 font-bold uppercase text-center py-6">
                             No day teams yet. Create teams in the Teams section.
